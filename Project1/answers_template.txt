@@ -1,9 +1,9 @@
 Team: 
-1-Octavian Suciu
-2-Sanghyun Hong
+1- 
+2- 
 3-
 
-Email: osuciu@cs.umd.edu, shhong@cs.umd.edu
+Email: 
 
 ---------------------------------------------------------------------------------
 Part 1)
@@ -44,16 +44,16 @@ p(s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
 
 s        | cord | division   | formation | phone | product | text
 -----------------------------------------------------------------
-p(s|time)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+p(time|s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
 
 s        | cord | division   | formation | phone | product | text
 -----------------------------------------------------------------
-p(s|loss)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+p(loss|s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
 
 
 s          | cord | division   | formation | phone | product | text
 ---------------------------------------------------------------------
-p(s|export)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+p(export|s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
 
 
 3- for the sentence X = "and i can tell you that i 'm an absolute nervous wreck every time she performs . i have her practice the last two lines on each page , so I can learn exactly when to turn the page -- just one of the tricks to this trade that i 've learned the hard way ."

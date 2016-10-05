@@ -1,19 +1,19 @@
-Team: 
-1- 
-2- 
+Team:
+1-
+2-
 3-
 
-Email: 
+Email:
 
 ---------------------------------------------------------------------------------
 Part 1)
 
-1- baseline accuracy = ?%
-2- Cohen’s Kappa = ?
+1- baseline accuracy = training-micro=52%, training-macro=11%, dev-micro=55%, dev-macro=11%
+2- Cohen’s Kappa = 0.93
 
 ---------------------------------------------------------------------------------
 Part 2)
-1- 
+1-
 
 s   | cord | division   | formation | phone | product | text
 -----------------------------------------------------------------
@@ -63,20 +63,20 @@ s     | cord | division   | formation | phone | product | text
 p(s|X)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
 
 4- classifier f-measures on the test set:
-micro averaged = 
-macro averaged = 
+micro averaged =
+macro averaged =
 
-5- 
+5-
 
 ---------------------------------------------------------------------------------
 Part 3)
 
-1- 
-2- comma separated accuracies (e.g. 30,35,60): 
+1-
+2- comma separated accuracies (e.g. 30,35,60):
 3- classifier f-measures on the test set:
-micro averaged = 
-macro averaged = 
-4- 
+micro averaged =
+macro averaged =
+4-
 ---------------------------------------------------------------------------------
 Part 4)
 A) Feature A:
@@ -84,12 +84,12 @@ A) Feature A:
 1- Description
 
 2- naive-bayes f-measures on the test set:
-micro averaged = 
-macro averaged = 
+micro averaged =
+macro averaged =
 
 3- perceptron f-measures on the test set:
-micro averaged = 
-macro averaged = 
+micro averaged =
+macro averaged =
 
 
 4- Conclusions:
@@ -99,12 +99,12 @@ B) Feature B:
 1- Description
 
 2- naive-bayes f-measures on the test set:
-micro averaged = 
-macro averaged = 
+micro averaged =
+macro averaged =
 
 3- perceptron f-measures on the test set:
-micro averaged = 
-macro averaged = 
+micro averaged =
+macro averaged =
 
 
 4- Conclusions:

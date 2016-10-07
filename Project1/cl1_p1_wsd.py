@@ -84,7 +84,7 @@ The same thing applies to the reset of the parameters.
 """
 def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
       dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
-  
+
   # Part 2.1 (c_s/c_sw)
   c_s  = Counter(train_labels)
   multiples = list(itertools.product(c_s.keys(), ['time', 'loss', 'export']))
@@ -97,7 +97,7 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     c_sw[(label, 'time')] += time_cnt
     c_sw[(label, 'loss')] += loss_cnt
     c_sw[(label, 'export')] += export_cnt
-  
+
   print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
         format('s', 'cord', 'division', 'formation', 'phone', 'product', 'text')
   print '------------------------------------------------------------------------------------------'
@@ -118,7 +118,7 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
   total_occurance = float(len(train_labels))
   p_s  = {key: (value / total_occurance) for key, value in c_s.iteritems()}
   p_ws = {key: (value / float(c_s[key[0]])) for key, value in c_sw.iteritems()}
-  
+
   print '------------------------------------------------------------------------------------------'
   print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
         format('p(s)', p_s['cord'], p_s['division'], p_s['formation'], p_s['phone'], p_s['product'], p_s['text'])
@@ -144,8 +144,8 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     for key in temp_prob.keys():
       temp_ps         = p_s[key]
       temp_pws_time   = p_ws[(key, 'time')]
-      temp_pws_loss   = p_ws[(key, 'loss')] 
-      temp_pws_export = p_ws[(key, 'export')] 
+      temp_pws_loss   = p_ws[(key, 'loss')]
+      temp_pws_export = p_ws[(key, 'export')]
       temp_prob[key]  = temp_ps * pow(temp_pws_time, cur_time) \
                                 * pow(temp_pws_loss, cur_loss) \
                                 * pow(temp_pws_export, cur_export)
@@ -178,8 +178,8 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
 
 ## extract all the distinct words from a set of texts
 ## return a dictionary {word:index} that maps each word to a unique index
-def extract_all_words(texts):
-    all_words = set()
+def extract_all_words(texts,prev_set=set()):
+    all_words = prev_set
     for t in texts:
         for w in t:
             all_words.add(w)
@@ -201,58 +201,92 @@ def extract_all_labels(labels):
 
     return all_labels_idx
 
+## construct a bow feature matrix for a set of instances
+## the returned matrix has the size NUM_INSTANCES X NUM_FEATURES
+def extract_features(all_words_idx,all_labels_idx,texts):
+    NUM_FEATURES = len(all_words_idx.keys())
+    NUM_INSTANCES = len(texts)
+    features_matrix = np.zeros((NUM_INSTANCES,NUM_FEATURES))
+    for i,instance in enumerate(texts):
+        for word in instance:
+            if all_words_idx.get(word,None) is None:
+                continue
+            features_matrix[i][all_words_idx[word]] += 1
+    return features_matrix
+
 ## compute the feature vector for a set of words and a given label
 ## the features are computed as described in Slide #19 of:
 ## http://www.cs.umd.edu/class/fall2016/cmsc723/slides/slides_02.pdf
-def compute_features(all_words_idx,all_labels_idx,instance,label):
-    feature_vector = np.zeros((len(all_words_idx.keys()),len(all_labels_idx.keys())))
-    for word in instance:
-        if all_words_idx.get(word,None) is None:
-            continue
-        feature_vector[all_words_idx[word]][all_labels_idx[label]] += 1
-    return np.append(feature_vector.flatten(),1)
+def get_features_for_label(instance,label,class_labels):
+    num_labels = len(class_labels)
+    num_feats = len(instance)
+    feats = np.zeros(len(instance)*num_labels+1)
+    assert len(feats[num_feats*label:num_feats*label+num_feats]) == len(instance)
+    feats[num_feats*label:num_feats*label+num_feats] = instance
+    return feats
 
 ## get the predicted label for a given instance
 ## the predicted label is the one with the highest dot product of theta*feature_vector
 ## return the predicted label, the dot product scores for all labels and the features computed for all labels for that instance
-def get_predicted_label(all_words_idx,all_labels_idx,inst,theta):
+def get_predicted_label(inst,class_labels,theta):
   all_labels_scores = {}
   all_labels_features = {}
-  for lbl in all_labels_idx.keys():
-      feat_vec = compute_features(all_words_idx,all_labels_idx,inst,lbl)
+  for lbl in class_labels:
+      feat_vec = get_features_for_label(inst,lbl,class_labels)
       assert len(feat_vec) == len(theta)
       all_labels_scores[lbl] = np.dot(feat_vec,theta)
-      all_labels_features[lbl] = feat_vec
 
   predicted_label = max(all_labels_scores.iteritems(), key=operator.itemgetter(1))[0]
-  return predicted_label,all_labels_scores,all_labels_features
+  return predicted_label
 
 ## train the perceptron by iterating over the entire training dataset
 ## the algorithm is an implementation of the pseudocode from Slide #23 of:
 ## http://www.cs.umd.edu/class/fall2016/cmsc723/slides/slides_03.pdf
-def train_perceptron(all_words_idx, all_labels_idx, train_texts, train_targets,train_labels):
-  theta = np.zeros(len(all_words_idx.keys())*len(all_labels_idx.keys())+1)
-  print '# Training Instances:',len(train_texts)
+def train_perceptron(train_features,train_labels,class_labels,num_features):
+  NO_MAX_ITERATIONS = 20
+  np.random.seed(0)
 
-  cnt_updates = 0
-  for i in range(len(train_texts)):
-      inst = train_texts[i]
-      actual_label = train_labels[i]
-      predicted_label,_,all_labels_features = get_predicted_label(all_words_idx,all_labels_idx,inst,theta)
+  theta = np.zeros(num_features)
 
-      if predicted_label != actual_label:
-          cnt_updates += 1
-          theta = theta + all_labels_features[actual_label] - all_labels_features[predicted_label]
+  print '# Training Instances:',len(train_features)
 
-  print '# Updates:',cnt_updates
+  num_iterations = 0
+  cnt_updates_total = 0
+  cnt_updates_prev = 0
+  m = np.zeros(num_features)
+  print '# Total Updates / # Current Iteration Updates:'
+  for piter in range(NO_MAX_ITERATIONS):
+      shuffled_indices = np.arange(len(train_features))
+      np.random.shuffle(shuffled_indices)
+      cnt_updates_crt = 0
+      for i in shuffled_indices:
+          inst = train_features[i]
+          actual_label = train_labels[i]
+          predicted_label = get_predicted_label(inst,class_labels,theta)
+
+          if predicted_label != actual_label:
+              cnt_updates_total += 1
+              cnt_updates_crt += 1
+              theta = theta + get_features_for_label(inst,actual_label,class_labels) - get_features_for_label(inst,predicted_label,class_labels)
+              m = m + theta
+
+          num_iterations += 1
+
+      print cnt_updates_total,'/',cnt_updates_crt
+      if cnt_updates_crt == 0:
+          break
+
+  theta = m/cnt_updates_total
+  print '# Iterations:',piter
+  print '# Iterations over instances:',num_iterations
+  print '# Total Updates:',cnt_updates_total
   return theta
 
 ## return the predictions of the perceptron on a test set
-def test_perceptron(theta, all_words_idx, all_labels_idx, test_texts):
+def test_perceptron(theta,test_features,test_labels,class_labels):
   predictions = []
-  for i in range(len(test_texts)):
-      inst = test_texts[i]
-      predicted_label,_,_ = get_predicted_label(all_words_idx,all_labels_idx,inst,theta)
+  for inst in test_features:
+      predicted_label = get_predicted_label(inst,class_labels,theta)
       predictions.append(predicted_label)
   return predictions
 
@@ -267,8 +301,22 @@ def run_bow_perceptron_classifier(train_texts, train_targets,train_labels,
 				dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
   all_words_idx = extract_all_words(train_texts)
   all_labels_idx = extract_all_labels(train_labels)
-  theta = train_perceptron(all_words_idx,all_labels_idx,train_texts, train_targets,train_labels)
-  test_predictions = test_perceptron(theta,all_words_idx,all_labels_idx,test_texts)
+
+  num_features = len(all_words_idx.keys())*len(all_labels_idx.keys())+1
+  class_labels = all_labels_idx.values()
+
+  train_features = extract_features(all_words_idx,all_labels_idx,train_texts)
+  train_labels = map(lambda e: all_labels_idx[e],train_labels)
+  test_features = extract_features(all_words_idx,all_labels_idx,test_texts)
+  test_labels = map(lambda e: all_labels_idx[e],test_labels)
+
+  for l in class_labels:
+        inst = train_features[0]
+        ffl = get_features_for_label(inst,l,class_labels)
+        assert False not in (inst == ffl[l*len(inst):(l+1)*len(inst)])
+
+  theta = train_perceptron(train_features,train_labels,class_labels,num_features)
+  test_predictions = test_perceptron(theta,test_features,test_labels,class_labels)
   eval_test = eval_performance(test_labels,test_predictions)
   return ('test-micro=%d%%, test-macro=%d%%' % (int(eval_test[0]*100),int(eval_test[1]*100)))
 
@@ -341,7 +389,7 @@ if __name__ == "__main__":
     test_labels, test_targets, test_texts = read_dataset('test')
 
     #running the classifier
-    test_scores = run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
+    test_scores = run_bow_perceptron_classifier(train_texts, train_targets, train_labels,
         dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
 
     print test_scores

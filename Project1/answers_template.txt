@@ -71,12 +71,12 @@ macro averaged =
 ---------------------------------------------------------------------------------
 Part 3)
 
-1-
-2- comma separated accuracies (e.g. 30,35,60):
+1- .:1.0, ``:1.0, her:2.0, with:1.0, plucky:1.0, an:1.0, to:2.0, plank:1.0, jean-jacques:1.0, last:1.0, by:1.0, line:1.0, tied:1.0, painting:1.0, sits:1.0, drawing:1.0, another:1.0, the:2.0, much-quoted:1.0, not:1.0, shows:1.0, friend:1.0, lady:1.0, a:1.0, madame:1.0, room:1.0, before:1.0, ,:3.0, dog:1.0, in:1.0, down:1.0, managed:1.0, did:1.0, french:1.0, little:1.0, rolland:1.0, !:1.0, exquisite:1.0, harp:1.0, pet:1.0, ah:1.0, liberty:1.0, she:1.0, and:1.0, of:1.0, hauer:1.0, lafayette:1.0, who:1.0, wordsworth:1.0
+2- comma separated accuracies (e.g. 30,35,60): 8,8,8,9,9,9,9,13,13,16,20,20,20,25,25,29,33,34,34,39,37,36,36,39,39,39,39,40,43
 3- classifier f-measures on the test set:
-micro averaged =
-macro averaged =
-4-
+micro averaged = 81%
+macro averaged = 69%
+4- The implementation is the averaged version of the algorithm. For each meta-iteration, it shuffles the training set and iterates over all the instances. The number of meta-iterations m = min(MAX_META_ITERATIONS,t: there are no mistakes on entire training set at meta-iteration t). We decided not to use any more advanced heuristics (e.g. based on the dev set performance) because this simple approach converges quickly (0 mistakes after 20 meta-iterations with 2,787 total mistakes).
 ---------------------------------------------------------------------------------
 Part 4)
 A) Feature A:

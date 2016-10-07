@@ -337,6 +337,40 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
 	pass
 
 
+## this feature is just a random number generated for each instance
+def get_feature_A(train_texts, train_targets,train_labels,
+        dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_label):
+
+    np.random.seed(0)
+
+    train_feature_vector = np.random.random_sample((len(train_texts),))
+    dev_feature_vector = np.random.random_sample((len(dev_texts),))
+    test_feature_vector = np.random.random_sample((len(test_texts),))
+
+    return train_feature_vector,dev_feature_vector,test_feature_vector
+
+## this feature encodes the number of distinct words in each instance
+def get_feature_B(train_texts, train_targets,train_labels,
+        dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_label):
+    train_feature_vector = np.zeros(len(train_texts))
+    dev_feature_vector = np.zeros(len(dev_texts))
+    test_feature_vector = np.zeros(len(test_texts))
+
+    for i,text in enumerate(train_texts):
+        nw = len(set(text))
+        train_feature_vector[i] = nw
+
+    for i,text in enumerate(dev_texts):
+        nw = len(set(text))
+        dev_feature_vector[i] = nw
+
+    for i,text in enumerate(test_texts):
+        nw = len(set(text))
+        test_feature_vector[i] = nw
+
+    return train_feature_vector,dev_feature_vector,test_feature_vector
+
+
 """
 Trains a perceptron model with bag of words features  + two additional features
 and computes the accuracy on the test set
@@ -346,11 +380,40 @@ The same thing applies to the reset of the parameters.
 
 """
 def run_extended_bow_perceptron_classifier(train_texts, train_targets,train_labels,
-				dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
-	"""
-	**Your final implementation of Part 4 with perceptron classifier**
-	"""
-	pass
+        dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
+
+  RUN_EXP_A = False # set to False for running on feature B
+
+  if RUN_EXP_A:
+      train_new_feature_vector,dev_new_feature_vector,test_new_feature_vector = get_feature_A(train_texts, train_targets,train_labels, dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels)
+  else:
+      train_new_feature_vector,dev_new_feature_vector,test_new_feature_vector = get_feature_B(train_texts, train_targets,train_labels, dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels)
+
+  all_words_idx = extract_all_words(train_texts)
+  all_labels_idx = extract_all_labels(train_labels)
+
+  num_features = (len(all_words_idx.keys())+1)*len(all_labels_idx.keys())+1
+  class_labels = all_labels_idx.values()
+
+  train_features = extract_features(all_words_idx,all_labels_idx,train_texts)
+  train_labels = map(lambda e: all_labels_idx[e],train_labels)
+  test_features = extract_features(all_words_idx,all_labels_idx,test_texts)
+  test_labels = map(lambda e: all_labels_idx[e],test_labels)
+
+  train_features = np.c_[train_features, train_new_feature_vector]
+  test_features = np.c_[test_features, test_new_feature_vector]
+
+  for l in class_labels:
+        inst = train_features[0]
+        ffl = get_features_for_label(inst,l,class_labels)
+        assert False not in (inst == ffl[l*len(inst):(l+1)*len(inst)])
+
+  theta = train_perceptron(train_features,train_labels,class_labels,num_features)
+  test_predictions = test_perceptron(theta,test_features,test_labels,class_labels)
+  eval_test = eval_performance(test_labels,test_predictions)
+  return ('test-micro=%d%%, test-macro=%d%%' % (int(eval_test[0]*100),int(eval_test[1]*100)))
+
+
 
 # Part 1.1
 def run_most_frequent_class_classifier(train_texts, train_targets,train_labels,
@@ -389,7 +452,7 @@ if __name__ == "__main__":
     test_labels, test_targets, test_texts = read_dataset('test')
 
     #running the classifier
-    test_scores = run_bow_perceptron_classifier(train_texts, train_targets, train_labels,
+    test_scores = run_extended_bow_perceptron_classifier(train_texts, train_targets, train_labels,
         dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
 
     print test_scores

@@ -76,37 +76,37 @@ Part 3)
 3- classifier f-measures on the test set:
 micro averaged = 81%
 macro averaged = 69%
-4- The implementation is the averaged version of the algorithm. For each meta-iteration, it shuffles the training set and iterates over all the instances. The number of meta-iterations m = min(MAX_META_ITERATIONS,t: there are no mistakes on entire training set at meta-iteration t). We decided not to use any more advanced heuristics (e.g. based on the dev set performance) because this simple approach converges quickly (0 mistakes after 20 meta-iterations with 2,787 total mistakes).
+4- The implementation is the averaged version of the algorithm. For each meta-iteration, it shuffles the training set and iterates over all the instances. The number of meta-iterations m = min(MAX_META_ITERATIONS,t: there are no mistakes on entire training set at meta-iteration t). We decided not to use any more advanced heuristics (e.g. based on the dev set performance) because this simple approach converges quickly (0 mistakes after 20 meta-iterations with 2,787 total mistakes). The feature set contains only words extracted from the training set.
 ---------------------------------------------------------------------------------
 Part 4)
 A) Feature A:
 
-1- Description
+1- Description - This feature is a random value added to each instance.
 
 2- naive-bayes f-measures on the test set:
 micro averaged =
 macro averaged =
 
 3- perceptron f-measures on the test set:
-micro averaged =
-macro averaged =
+micro averaged = 81%
+macro averaged = 70%
 
 
-4- Conclusions:
+4- Conclusions: The random feature does not affect perceptron. The number of updates decreased slightly and the reported f-measure change is not significant. This result highlights perceptron's resilience to noise in the data.
 
 B) Feature B:
 
-1- Description
+1- Description - This feature encodes the total number of distinct words for each instance.
 
 2- naive-bayes f-measures on the test set:
 micro averaged =
 macro averaged =
 
 3- perceptron f-measures on the test set:
-micro averaged =
-macro averaged =
+micro averaged = 78%
+macro averaged = 66%
 
 
-4- Conclusions:
+4- Conclusions: The feature seems to actually hurt the performance of perceptron. The algorithm hits a hard stop after 30 meta-iterations, with a total of 26,877 updates (10 times the number of mistakes in the non-extended version). One possible explanation is non-stationarity in data: the bow features are only extracted from the training set; perceptron learns some correlation between bow + word_count and the classes. On the test set, word_count comes from a distribution similar to the training set one, but bow represenations are different (words unseen in the training set are just discarded), causing lots of mispredictions.
 
 

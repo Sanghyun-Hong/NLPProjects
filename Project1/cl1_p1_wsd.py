@@ -89,14 +89,13 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
   c_s  = dict.fromkeys(set(train_labels), 0)
   multiples = list(itertools.product(c_s.keys(), ['time', 'loss', 'export']))
   c_sw = dict.fromkeys(multiples, 0)
-  t_w  = list()
-  t_sw = dict()
+  t_w  = [each_word for each_text in train_texts for each_word in each_text]
+  multiples = list(itertools.product(c_s.keys(), t_w))
+  t_sw = dict.fromkeys(multiples, 0)
   for idx, label in enumerate(train_labels):
     cur_text = train_texts[idx]
     # compute c_s
     c_s[label] += len(cur_text)
-    # collect total words
-    t_w         += cur_text
     # compute c_sw
     time_cnt = cur_text.count('time')
     loss_cnt = cur_text.count('loss')
@@ -106,10 +105,7 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     c_sw[(label, 'export')] += export_cnt
     # compute t_sw (total occurances): of (label, word): occurances
     for each_word in cur_text:
-      if t_sw.has_key((label, each_word)):
-        t_sw[(label, each_word)] += 1
-      else:
-        t_sw[(label, each_word)]  = 1
+      t_sw[(label, each_word)] += 1
 
   # total # of distinct words: will be used for smoothing
   t_dw = Counter(t_w)
@@ -133,7 +129,8 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
 
   # Part 2.2 (p_s/p_ws)
   total_occurances = float(sum(c_s.values()))
-  p_s  = {key: (value / total_occurances) for key, value in c_s.iteritems()}
+  label_count      = Counter(train_labels)
+  p_s  = {key: (value / float( sum( label_count.values() )) ) for key, value in label_count.iteritems()}
   if improved:
     p_ws = {key: ( (value + alpha) / \
                    (float(c_s[key[0]]) + alpha*len(t_dw.keys())) ) \
@@ -175,28 +172,38 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
   cur_text = dev_texts[0]
   for key in p_sxd.keys():
     # compute p for each class
-    tp_sxd  = p_s[key]
-    tlp_sxd = log(p_s[key])
+    if improved:
+      tp_sxd  = p_s[key]
+      tlp_sxd = log(p_s[key])
+    else:
+      tp_sxd  = p_s[key]
+    # compute for each word
     for each_word in cur_text:
       if t_ws.has_key((key, each_word)):
-        tp_sxd  *= t_ws[(key, each_word)]
-        tlp_sxd += log(t_ws[(key, each_word)])
+        if improved:
+          tp_sxd  *= t_ws[(key, each_word)]
+          tlp_sxd += log(t_ws[(key, each_word)])
+        else:
+          tp_sxd  *= t_ws[(key, each_word)]
     # add to the dict
-    p_sxd[key]  = tp_sxd
-    lp_sxd[key] = tlp_sxd
+    if improved:
+      p_sxd[key]  = tp_sxd
+      lp_sxd[key] = tlp_sxd
+    else:
+      p_sxd[key]  = tp_sxd
 
   print '------------------------------------------------------------------------------------------'
-  print '{:<11} | {f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
         format('p(s|X)', p_sxd['cord'], p_sxd['division'], p_sxd['formation'], \
                          p_sxd['phone'], p_sxd['product'], p_sxd['text'])
   print '------------------------------------------------------------------------------------------'
   print ' 1st label in dev    : %s ' % (dev_labels[0])
   print ' 1st text  in dev[:5]: %s ' % (dev_texts[0][:5])
-  print '------------------------------------------------------------------------------------------'
-  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('log(p(s|X))', lp_sxd['cord'], lp_sxd['division'], lp_sxd['formation'], \
-                              lp_sxd['phone'], lp_sxd['product'], lp_sxd['text'])
-
+  if improved:
+    print '------------------------------------------------------------------------------------------'
+    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+          format('log(p(s|X))', lp_sxd['cord'], lp_sxd['division'], lp_sxd['formation'], \
+                                lp_sxd['phone'], lp_sxd['product'], lp_sxd['text'])
 
   # Part 2.4: compute all the prob on the test dataset
   p_sx = list()
@@ -204,10 +211,16 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     t_prob = dict.fromkeys(c_s.keys(), 0.0)
     for key in t_prob.keys():
       # compute p for each class
-      tp_sxt  = log(p_s[key])
+      if improved:
+        tp_sxt  = log(p_s[key])
+      else:
+        tp_sxt  = p_s[key]
       for each_word in text:
         if t_ws.has_key((key, each_word)):
-          tp_sxt += log(t_ws[(key, each_word)])
+          if improved:
+            tp_sxt += log(t_ws[(key, each_word)])
+          else:
+            tp_sxt *= t_ws[(key, each_word)]
       # add to the dict
       t_prob[key] = tp_sxt
     # add dict to the entire list

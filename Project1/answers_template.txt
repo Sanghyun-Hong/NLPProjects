@@ -17,54 +17,54 @@ Part 2)
 
 s   | cord | division   | formation | phone | product | text
 -----------------------------------------------------------------
-c(s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+c(s)| 11970| 13297      | 12882     | 15085 | 80666   | 15694
 
 
 s        | cord | division   | formation | phone | product | text
 -----------------------------------------------------------------
-c(s,time)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+c(s,time)|   12 |       13   |        16 |    15 |      43 |   19
 
 s        | cord | division   | formation | phone | product | text
 -----------------------------------------------------------------
-c(s,loss)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+c(s,loss)|    1 |        0   |         0 |     2 |      23 |    0
 
 
 s          | cord | division   | formation | phone | product | text
 ---------------------------------------------------------------------
-c(s,export)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+c(s,export)|    0 |        0   |         0 |     1 |       3 |    0
 
 
 
 2-
 
-s   | cord | division   | formation | phone | product | text
------------------------------------------------------------------
-p(s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+s   | cord       | division   | formation  | phone      | product    | text
+---------------------------------------------------------------------------------
+p(s)| 0.09407305 | 0.08718125 | 0.08649207 | 0.10751206 | 0.52584425 | 0.09889731
 
 
-s        | cord | division   | formation | phone | product | text
------------------------------------------------------------------
-p(time|s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+s        | cord       | division   | formation  | phone      | product    | text
+--------------------------------------------------------------------------------------
+p(time|s)| 0.04395604 | 0.05138340 | 0.06374502 | 0.04807692 | 0.02817824 | 0.06620209
 
-s        | cord | division   | formation | phone | product | text
------------------------------------------------------------------
-p(loss|s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+s        | cord       | division   | formation  | phone      | product    | text
+--------------------------------------------------------------------------------------
+p(loss|s)| 0.00366300 | 0.00000000 | 0.00000000 | 0.00641026 | 0.01507208 | 0.00000000
 
 
-s          | cord | division   | formation | phone | product | text
----------------------------------------------------------------------
-p(export|s)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+s          | cord       | division   | formation  | phone      | product    | text
+--------------------------------------------------------------------------------------
+p(export|s)| 0.00000000 | 0.00000000 | 0.00000000 | 0.00320513 | 0.00196592 | 0.00000000
 
 
 3- for the sentence X = "and i can tell you that i 'm an absolute nervous wreck every time she performs . i have her practice the last two lines on each page , so I can learn exactly when to turn the page -- just one of the tricks to this trade that i 've learned the hard way ."
 
-s     | cord | division   | formation | phone | product | text
------------------------------------------------------------------
-p(s|X)|   ?  |    ?       |    ?      |  ?    |    ?    |    ?
+s     | cord       | division   | formation  | phone      | product    | text
+--------------------------------------------------------------------------------------
+p(s|X)| 0.09407305 | 0.08718125 | 0.08649207 | 0.10751206 | 0.52584425 | 0.09889731
 
 4- classifier f-measures on the test set:
-micro averaged =
-macro averaged =
+micro averaged = 55.54
+macro averaged = 11.90
 
 5-
 

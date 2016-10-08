@@ -5,7 +5,7 @@ import operator
 import json
 import random
 import itertools
-from math import pow
+from math import pow, log
 from collections import Counter
 
 
@@ -83,21 +83,37 @@ train_texts, train_targets, train_labels are as described in read_dataset above
 The same thing applies to the reset of the parameters.
 """
 def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-      dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
+      dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, improved=True, alpha=1.0):
 
   # Part 2.1 (c_s/c_sw)
-  c_s  = Counter(train_labels)
+  c_s  = dict.fromkeys(set(train_labels), 0)
   multiples = list(itertools.product(c_s.keys(), ['time', 'loss', 'export']))
   c_sw = dict.fromkeys(multiples, 0)
+  t_w  = list()
+  t_sw = dict()
   for idx, label in enumerate(train_labels):
     cur_text = train_texts[idx]
+    # compute c_s
+    c_s[label] += len(cur_text)
+    # collect total words
+    t_w         += cur_text
+    # compute c_sw
     time_cnt = cur_text.count('time')
     loss_cnt = cur_text.count('loss')
     export_cnt = cur_text.count('export')
     c_sw[(label, 'time')] += time_cnt
     c_sw[(label, 'loss')] += loss_cnt
     c_sw[(label, 'export')] += export_cnt
+    # compute t_sw (total occurances): of (label, word): occurances
+    for each_word in cur_text:
+      if t_sw.has_key((label, each_word)):
+        t_sw[(label, each_word)] += 1
+      else:
+        t_sw[(label, each_word)]  = 1
 
+  # total # of distinct words: will be used for smoothing
+  t_dw = Counter(t_w)
+  
   print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
         format('s', 'cord', 'division', 'formation', 'phone', 'product', 'text')
   print '------------------------------------------------------------------------------------------'
@@ -112,12 +128,33 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
   print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
         format('c(s,export)', c_sw[('cord', 'export')], c_sw[('division', 'export')], c_sw[('formation', 'export')], \
                c_sw[('phone', 'export')], c_sw[('product', 'export')], c_sw[('text', 'export')])
-
+  print '------------------------------------------------------------------------------------------'
+  print ' total distinct words: %d ' % (len(t_dw.keys()))
 
   # Part 2.2 (p_s/p_ws)
-  total_occurance = float(len(train_labels))
-  p_s  = {key: (value / total_occurance) for key, value in c_s.iteritems()}
-  p_ws = {key: (value / float(c_s[key[0]])) for key, value in c_sw.iteritems()}
+  total_occurances = float(sum(c_s.values()))
+  p_s  = {key: (value / total_occurances) for key, value in c_s.iteritems()}
+  if improved:
+    p_ws = {key: ( (value + alpha) / \
+                   (float(c_s[key[0]]) + alpha*len(t_dw.keys())) ) \
+                   for key, value in c_sw.iteritems()}
+    t_ws = {key: ( (value + alpha) / \
+                   (float(c_s[key[0]]) + alpha*len(t_dw.keys())) ) \
+                   for key, value in t_sw.iteritems()}
+  else:
+    p_ws = {key: (value / float(c_s[key[0]])) for key, value in c_sw.iteritems()}
+    t_ws = {key: (value / float(c_s[key[0]])) for key, value in t_sw.iteritems()}
+
+  # normalization steps
+  norm_denominators = {
+      'time': 0.0, 
+      'loss': 0.0, 
+      'export': 0.0
+    }
+  for key, value in p_ws.iteritems():
+    norm_denominators[key[1]] += value
+  p_ws_norm = {key: (value / norm_denominators[key[1]]) for key, value in p_ws.iteritems()}
+  p_ws = p_ws_norm
 
   print '------------------------------------------------------------------------------------------'
   print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
@@ -132,31 +169,49 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
         format('p(export|s)', p_ws[('cord', 'export')], p_ws[('division', 'export')], p_ws[('formation', 'export')], \
                p_ws[('phone', 'export')], p_ws[('product', 'export')], p_ws[('text', 'export')])
 
-
-  # Part 2.3 (p_sx[0], on the 1st line on test set)
-  p_sx = list()
-  for idx, text in enumerate(dev_texts):
-    temp_prob = dict.fromkeys(c_s.keys(), 0.0)
-    cur_time = text.count('time')
-    cur_loss = text.count('loss')
-    cur_export = text.count('export')
-
-    for key in temp_prob.keys():
-      temp_ps         = p_s[key]
-      temp_pws_time   = p_ws[(key, 'time')]
-      temp_pws_loss   = p_ws[(key, 'loss')]
-      temp_pws_export = p_ws[(key, 'export')]
-      temp_prob[key]  = temp_ps * pow(temp_pws_time, cur_time) \
-                                * pow(temp_pws_loss, cur_loss) \
-                                * pow(temp_pws_export, cur_export)
-
-    p_sx.append(temp_prob)
+  # Part 2.3 (p_sxd, on the 1st line on test set)
+  p_sxd  = dict.fromkeys(c_s.keys(), 0.0)
+  lp_sxd = dict.fromkeys(c_s.keys(), 0.0)
+  cur_text = dev_texts[0]
+  for key in p_sxd.keys():
+    # compute p for each class
+    tp_sxd  = p_s[key]
+    tlp_sxd = log(p_s[key])
+    for each_word in cur_text:
+      if t_ws.has_key((key, each_word)):
+        tp_sxd  *= t_ws[(key, each_word)]
+        tlp_sxd += log(t_ws[(key, each_word)])
+    # add to the dict
+    p_sxd[key]  = tp_sxd
+    lp_sxd[key] = tlp_sxd
 
   print '------------------------------------------------------------------------------------------'
+  print '{:<11} | {f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+        format('p(s|X)', p_sxd['cord'], p_sxd['division'], p_sxd['formation'], \
+                         p_sxd['phone'], p_sxd['product'], p_sxd['text'])
+  print '------------------------------------------------------------------------------------------'
+  print ' 1st label in dev    : %s ' % (dev_labels[0])
+  print ' 1st text  in dev[:5]: %s ' % (dev_texts[0][:5])
+  print '------------------------------------------------------------------------------------------'
   print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('p(s|X)', p_sx[0]['cord'], p_sx[0]['division'], p_sx[0]['formation'], \
-                p_sx[0]['phone'], p_sx[0]['product'], p_sx[0]['text'])
+        format('log(p(s|X))', lp_sxd['cord'], lp_sxd['division'], lp_sxd['formation'], \
+                              lp_sxd['phone'], lp_sxd['product'], lp_sxd['text'])
 
+
+  # Part 2.4: compute all the prob on the test dataset
+  p_sx = list()
+  for idx, text in enumerate(test_texts):
+    t_prob = dict.fromkeys(c_s.keys(), 0.0)
+    for key in t_prob.keys():
+      # compute p for each class
+      tp_sxt  = log(p_s[key])
+      for each_word in text:
+        if t_ws.has_key((key, each_word)):
+          tp_sxt += log(t_ws[(key, each_word)])
+      # add to the dict
+      t_prob[key] = tp_sxt
+    # add dict to the entire list
+    p_sx.append(t_prob)
 
   # Part 2.4 (run the classifier for all)
   labels_predicted = list()
@@ -164,6 +219,7 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     maximum_probs    = max(p_sx[idx].values())
     label_prediction = [key for key, value in p_sx[idx].iteritems() if value == maximum_probs]
     label_prediction = random.choice(label_prediction)
+    # based on the prob
     labels_predicted.append(label_prediction)
   naivebayes_performance = eval_performance(test_labels, labels_predicted)
 
@@ -173,7 +229,8 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
 
   # Part 2.5 (do more tuning for the classifier)
   #  - Laplace smoothing
-  return 'TODO - (apply smoothing, and other useful techniques)'
+  print '------------------------------------------------------------------------------------------'
+  return 'Done'
 
 
 ## extract all the distinct words from a set of texts
@@ -389,7 +446,7 @@ if __name__ == "__main__":
     test_labels, test_targets, test_texts = read_dataset('test')
 
     #running the classifier
-    test_scores = run_bow_perceptron_classifier(train_texts, train_targets, train_labels,
+    test_scores = run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
         dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
 
     print test_scores

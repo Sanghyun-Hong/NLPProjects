@@ -83,7 +83,8 @@ train_texts, train_targets, train_labels are as described in read_dataset above
 The same thing applies to the reset of the parameters.
 """
 def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-      dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, improved=True, alpha=1.0):
+      dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, 
+      improved=True, alpha=0.5, silent=False):
 
   # Part 2.1 (c_s/c_sw)
   c_s  = dict.fromkeys(set(train_labels), 0)
@@ -110,22 +111,23 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
   # total # of distinct words: will be used for smoothing
   t_dw = Counter(t_w)
   
-  print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-        format('s', 'cord', 'division', 'formation', 'phone', 'product', 'text')
-  print '------------------------------------------------------------------------------------------'
-  print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-        format('c(s)', c_s['cord'], c_s['division'], c_s['formation'], c_s['phone'], c_s['product'], c_s['text'])
-  print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-        format('c(s,time)', c_sw[('cord', 'time')], c_sw[('division', 'time')], c_sw[('formation', 'time')], \
-               c_sw[('phone', 'time')], c_sw[('product', 'time')], c_sw[('text', 'time')])
-  print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-        format('c(s,loss)', c_sw[('cord', 'loss')], c_sw[('division', 'loss')], c_sw[('formation', 'loss')], \
-               c_sw[('phone', 'loss')], c_sw[('product', 'loss')], c_sw[('text', 'loss')])
-  print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-        format('c(s,export)', c_sw[('cord', 'export')], c_sw[('division', 'export')], c_sw[('formation', 'export')], \
-               c_sw[('phone', 'export')], c_sw[('product', 'export')], c_sw[('text', 'export')])
-  print '------------------------------------------------------------------------------------------'
-  print ' total distinct words: %d ' % (len(t_dw.keys()))
+  if not silent:
+    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
+          format('s', 'cord', 'division', 'formation', 'phone', 'product', 'text')
+    print '------------------------------------------------------------------------------------------'
+    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
+          format('c(s)', c_s['cord'], c_s['division'], c_s['formation'], c_s['phone'], c_s['product'], c_s['text'])
+    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
+          format('c(s,time)', c_sw[('cord', 'time')], c_sw[('division', 'time')], c_sw[('formation', 'time')], \
+                 c_sw[('phone', 'time')], c_sw[('product', 'time')], c_sw[('text', 'time')])
+    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
+          format('c(s,loss)', c_sw[('cord', 'loss')], c_sw[('division', 'loss')], c_sw[('formation', 'loss')], \
+                 c_sw[('phone', 'loss')], c_sw[('product', 'loss')], c_sw[('text', 'loss')])
+    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
+          format('c(s,export)', c_sw[('cord', 'export')], c_sw[('division', 'export')], c_sw[('formation', 'export')], \
+                 c_sw[('phone', 'export')], c_sw[('product', 'export')], c_sw[('text', 'export')])
+    print '------------------------------------------------------------------------------------------'
+    print ' total distinct words: %d ' % (len(t_dw.keys()))
 
   # Part 2.2 (p_s/p_ws)
   total_occurances = float(sum(c_s.values()))
@@ -153,18 +155,19 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
   p_ws_norm = {key: (value / norm_denominators[key[1]]) for key, value in p_ws.iteritems()}
   p_ws = p_ws_norm
 
-  print '------------------------------------------------------------------------------------------'
-  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('p(s)', p_s['cord'], p_s['division'], p_s['formation'], p_s['phone'], p_s['product'], p_s['text'])
-  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('p(time|s)', p_ws[('cord', 'time')], p_ws[('division', 'time')], p_ws[('formation', 'time')], \
-               p_ws[('phone', 'time')], p_ws[('product', 'time')], p_ws[('text', 'time')])
-  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('p(loss|s)', p_ws[('cord', 'loss')], p_ws[('division', 'loss')], p_ws[('formation', 'loss')], \
-               p_ws[('phone', 'loss')], p_ws[('product', 'loss')], p_ws[('text', 'loss')])
-  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('p(export|s)', p_ws[('cord', 'export')], p_ws[('division', 'export')], p_ws[('formation', 'export')], \
-               p_ws[('phone', 'export')], p_ws[('product', 'export')], p_ws[('text', 'export')])
+  if not silent:
+    print '------------------------------------------------------------------------------------------'
+    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+          format('p(s)', p_s['cord'], p_s['division'], p_s['formation'], p_s['phone'], p_s['product'], p_s['text'])
+    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+          format('p(time|s)', p_ws[('cord', 'time')], p_ws[('division', 'time')], p_ws[('formation', 'time')], \
+                 p_ws[('phone', 'time')], p_ws[('product', 'time')], p_ws[('text', 'time')])
+    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+          format('p(loss|s)', p_ws[('cord', 'loss')], p_ws[('division', 'loss')], p_ws[('formation', 'loss')], \
+                 p_ws[('phone', 'loss')], p_ws[('product', 'loss')], p_ws[('text', 'loss')])
+    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+          format('p(export|s)', p_ws[('cord', 'export')], p_ws[('division', 'export')], p_ws[('formation', 'export')], \
+                 p_ws[('phone', 'export')], p_ws[('product', 'export')], p_ws[('text', 'export')])
 
   # Part 2.3 (p_sxd, on the 1st line on test set)
   p_sxd  = dict.fromkeys(c_s.keys(), 0.0)
@@ -192,18 +195,19 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     else:
       p_sxd[key]  = tp_sxd
 
-  print '------------------------------------------------------------------------------------------'
-  print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-        format('p(s|X)', p_sxd['cord'], p_sxd['division'], p_sxd['formation'], \
-                         p_sxd['phone'], p_sxd['product'], p_sxd['text'])
-  print '------------------------------------------------------------------------------------------'
-  print ' 1st label in dev    : %s ' % (dev_labels[0])
-  print ' 1st text  in dev[:5]: %s ' % (dev_texts[0][:5])
-  if improved:
+  if not silent:
     print '------------------------------------------------------------------------------------------'
-    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-          format('log(p(s|X))', lp_sxd['cord'], lp_sxd['division'], lp_sxd['formation'], \
-                                lp_sxd['phone'], lp_sxd['product'], lp_sxd['text'])
+    print ' %s | %s | %s | %s | %s | %s | %s |' % \
+          ('p(s|X)', p_sxd['cord'], p_sxd['division'], p_sxd['formation'], \
+                     p_sxd['phone'], p_sxd['product'], p_sxd['text'])
+    print '------------------------------------------------------------------------------------------'
+    print ' 1st label in dev    : %s ' % (dev_labels[0])
+    print ' 1st text  in dev[:5]: %s ' % (dev_texts[0][:5])
+    if improved:
+      print '------------------------------------------------------------------------------------------'
+      print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
+            format('log(p(s|X))', lp_sxd['cord'], lp_sxd['division'], lp_sxd['formation'], \
+                                  lp_sxd['phone'], lp_sxd['product'], lp_sxd['text'])
 
   # Part 2.4: compute all the prob on the test dataset
   p_sx = list()
@@ -236,14 +240,13 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     labels_predicted.append(label_prediction)
   naivebayes_performance = eval_performance(test_labels, labels_predicted)
 
-  print '------------------------------------------------------------------------------------------'
-  print 'Naive Bayes: micro/macro = [%.2f, %.2f] ' % \
-          (naivebayes_performance[0]*100, naivebayes_performance[1]*100)
-
   # Part 2.5 (do more tuning for the classifier)
   #  - Laplace smoothing
-  print '------------------------------------------------------------------------------------------'
-  return 'Done'
+  #  - Log likelihoods
+  if not silent:
+    print '------------------------------------------------------------------------------------------'
+  return 'Naive Bayes: micro/macro = [%.2f, %.2f] @ (alpha: %s)' % \
+          (naivebayes_performance[0]*100, naivebayes_performance[1]*100, alpha)
 
 
 ## extract all the distinct words from a set of texts
@@ -458,8 +461,11 @@ if __name__ == "__main__":
     dev_labels, dev_targets, dev_texts = read_dataset('dev')
     test_labels, test_targets, test_texts = read_dataset('test')
 
-    #running the classifier
-    test_scores = run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-        dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
-
-    print test_scores
+    # running the classifier
+    set_of_alphas = [0.04]
+    # [0.022, 0.024, 0.026, 0.028, 0.03, 0.032, 0.034, 0.036, 0.038]
+    # [0.00001, 0.0001, 0.001, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 2.0, 4.0]
+    for each_alpha in set_of_alphas:
+      test_scores = run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
+          dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, alpha=each_alpha)
+      print test_scores

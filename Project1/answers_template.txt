@@ -44,29 +44,29 @@ p(s)| 0.09407305 | 0.08718125 | 0.08649207 | 0.10751206 | 0.52584425 | 0.0988973
 
 s        | cord       | division   | formation  | phone      | product    | text
 --------------------------------------------------------------------------------------
-p(time|s)| 0.04395604 | 0.05138340 | 0.06374502 | 0.04807692 | 0.02817824 | 0.06620209
+p(time|s)| 0.16671639 | 0.16335602 | 0.20711042 | 0.16697089 | 0.09235520 | 0.20349109
 
 s        | cord       | division   | formation  | phone      | product    | text
 --------------------------------------------------------------------------------------
-p(loss|s)| 0.00366300 | 0.00000000 | 0.00000000 | 0.00641026 | 0.01507208 | 0.00000000
+p(loss|s)| 0.16377016 | 0.00569859 | 0.00587364 | 0.25755663 | 0.56223929 | 0.00486170
 
 
 s          | cord       | division   | formation  | phone      | product    | text
---------------------------------------------------------------------------------------
-p(export|s)| 0.00000000 | 0.00000000 | 0.00000000 | 0.00320513 | 0.00196592 | 0.00000000
+----------------------------------------------------------------------------------------
+p(export|s)| 0.02759985 | 0.02496965 | 0.02573668 | 0.57533558 | 0.32505559 | 0.02130264
 
 
 3- for the sentence X = "and i can tell you that i 'm an absolute nervous wreck every time she performs . i have her practice the last two lines on each page , so I can learn exactly when to turn the page -- just one of the tricks to this trade that i 've learned the hard way ."
 
 s     | cord       | division   | formation  | phone      | product    | text
 --------------------------------------------------------------------------------------
-p(s|X)| 0.09407305 | 0.08718125 | 0.08649207 | 0.10751206 | 0.52584425 | 0.09889731
+p(s|X)| 4.1427e-170| 5.0955e-174| 1.7858e-173| 7.2125e-174| 2.5874e-185| 3.1816e-164
 
 4- classifier f-measures on the test set:
-micro averaged = 55.54
-macro averaged = 11.90
+micro averaged = 86.70
+macro averaged = 78.56
 
-5-
+5- We blend smoothing and log-likelihood techniques in our algorithm implementation. Staring from the add-one smoothing (alpha = 1), we varies the alpha from 0.001 to 10.0 increasing in each 0.002 values in order to find the best smoothing values (i.e., 0.04). With the smoothing, log-likelihood is used to compute the muliplication of probabilities, since several conditional probabilities are really small, so it couldn't be computed unless log values are used. In here, we use the natual log denoted ln(x).
 
 ---------------------------------------------------------------------------------
 Part 3)

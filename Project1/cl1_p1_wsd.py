@@ -83,7 +83,7 @@ train_texts, train_targets, train_labels are as described in read_dataset above
 The same thing applies to the reset of the parameters.
 """
 def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-      dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, 
+      dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels,
       improved=True, alpha=0.5, silent=False):
 
   # Part 2.1 (c_s/c_sw)
@@ -110,7 +110,7 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
 
   # total # of distinct words: will be used for smoothing
   t_dw = Counter(t_w)
-  
+
   if not silent:
     print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
           format('s', 'cord', 'division', 'formation', 'phone', 'product', 'text')
@@ -146,8 +146,8 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
 
   # normalization steps
   norm_denominators = {
-      'time': 0.0, 
-      'loss': 0.0, 
+      'time': 0.0,
+      'loss': 0.0,
       'export': 0.0
     }
   for key, value in p_ws.iteritems():
@@ -524,19 +524,9 @@ if __name__ == "__main__":
     dev_labels, dev_targets, dev_texts = read_dataset('dev')
     test_labels, test_targets, test_texts = read_dataset('test')
 
-<<<<<<< HEAD
     #running the classifier
     test_scores = run_extended_bow_perceptron_classifier(train_texts, train_targets, train_labels,
         dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
 
     print test_scores
-=======
-    # running the classifier
-    set_of_alphas = [0.04]
-    # [0.022, 0.024, 0.026, 0.028, 0.03, 0.032, 0.034, 0.036, 0.038]
-    # [0.00001, 0.0001, 0.001, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 2.0, 4.0]
-    for each_alpha in set_of_alphas:
-      test_scores = run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-          dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, alpha=each_alpha)
-      print test_scores
->>>>>>> origin/master
+

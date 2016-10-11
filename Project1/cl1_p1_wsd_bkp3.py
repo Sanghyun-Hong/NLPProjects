@@ -1,14 +1,5 @@
 import numpy as np
 import operator
-
-# SHHONG: custom modules imported
-import json
-import random
-import itertools
-from math import pow, log
-from collections import Counter
-
-
 """
 CMSC723 / INST725 / LING723 -- Fall 2016
 Project 1: Implementing Word Sense Disambiguation Systems
@@ -21,34 +12,34 @@ Project 1: Implementing Word Sense Disambiguation Systems
  subset - one of train, dev, test
 
  output is a tuple of three lists
- 	labels: one of the 6 possible senses <cord, division, formation, phone, product, text >
- 	targets: the index within the text of the token to be disambiguated
- 	texts: a list of tokenized and normalized text input (note that there can be multiple sentences)
+  labels: one of the 6 possible senses <cord, division, formation, phone, product, text >
+  targets: the index within the text of the token to be disambiguated
+  texts: a list of tokenized and normalized text input (note that there can be multiple sentences)
 
 """
 import nltk
 #### added dev_manual to the subset of allowable files
 def read_dataset(subset):
-	labels = []
-	texts = []
-	targets = []
-	if subset in ['train', 'dev', 'test', 'dev_manual']:
-		with open('data/wsd_'+subset+'.txt') as inp_hndl:
-			for example in inp_hndl:
-				label, text = example.strip().split('\t')
-				text = nltk.word_tokenize(text.lower().replace('" ','"'))
-				if 'line' in text:
-					ambig_ix = text.index('line')
-				elif 'lines' in text:
-					ambig_ix = text.index('lines')
-				else:
-					ldjal
-				targets.append(ambig_ix)
-				labels.append(label)
-				texts.append(text)
-		return (labels, targets, texts)
-	else:
-		print '>>>> invalid input !!! <<<<<'
+  labels = []
+  texts = []
+  targets = []
+  if subset in ['train', 'dev', 'test','dev_manual']:
+    with open('data/wsd_'+subset+'.txt') as inp_hndl:
+      for example in inp_hndl:
+        label, text = example.strip().split('\t')
+        text = nltk.word_tokenize(text.lower().replace('" ','"'))
+        if 'line' in text:
+          ambig_ix = text.index('line')
+        elif 'lines' in text:
+          ambig_ix = text.index('lines')
+        else:
+          ldjal
+        targets.append(ambig_ix)
+        labels.append(label)
+        texts.append(text)
+    return (labels, targets, texts)
+  else:
+    print '>>>> invalid input !!! <<<<<'
 
 """
 computes f1-score of the classification accuracy
@@ -62,8 +53,8 @@ output is a tuple of the micro averaged score and the macro averaged score
 import sklearn.metrics
 #### changed method name from eval because of naming conflict with python keyword
 def eval_performance(gold_labels, predicted_labels):
-	return ( sklearn.metrics.f1_score(gold_labels, predicted_labels, average='micro'),
-			     sklearn.metrics.f1_score(gold_labels, predicted_labels, average='macro') )
+  return ( sklearn.metrics.f1_score(gold_labels, predicted_labels, average='micro'),
+       sklearn.metrics.f1_score(gold_labels, predicted_labels, average='macro') )
 
 
 """
@@ -72,9 +63,9 @@ predictions - list of predictions (strings)
 file_name - name of the output file
 """
 def write_predictions(predictions, file_name):
-	with open(file_name, 'w') as outh:
-		for p in predictions:
-			outh.write(p+'\n')
+  with open(file_name, 'w') as outh:
+    for p in predictions:
+      outh.write(p+'\n')
 
 """
 Trains a naive bayes model with bag of words features and computes the accuracy on the test set
@@ -83,171 +74,12 @@ train_texts, train_targets, train_labels are as described in read_dataset above
 The same thing applies to the reset of the parameters.
 """
 def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-      dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, 
-      improved=True, alpha=0.5, silent=False):
+        dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
 
-  # Part 2.1 (c_s/c_sw)
-  c_s  = dict.fromkeys(set(train_labels), 0)
-  multiples = list(itertools.product(c_s.keys(), ['time', 'loss', 'export']))
-  c_sw = dict.fromkeys(multiples, 0)
-  t_w  = [each_word for each_text in train_texts for each_word in each_text]
-  multiples = list(itertools.product(c_s.keys(), t_w))
-  t_sw = dict.fromkeys(multiples, 0)
-  for idx, label in enumerate(train_labels):
-    cur_text = train_texts[idx]
-    # compute c_s
-    c_s[label] += len(cur_text)
-    # compute c_sw
-    time_cnt = cur_text.count('time')
-    loss_cnt = cur_text.count('loss')
-    export_cnt = cur_text.count('export')
-    c_sw[(label, 'time')] += time_cnt
-    c_sw[(label, 'loss')] += loss_cnt
-    c_sw[(label, 'export')] += export_cnt
-    # compute t_sw (total occurances): of (label, word): occurances
-    for each_word in cur_text:
-      t_sw[(label, each_word)] += 1
-
-  # total # of distinct words: will be used for smoothing
-  t_dw = Counter(t_w)
-  
-  if not silent:
-    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-          format('s', 'cord', 'division', 'formation', 'phone', 'product', 'text')
-    print '------------------------------------------------------------------------------------------'
-    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-          format('c(s)', c_s['cord'], c_s['division'], c_s['formation'], c_s['phone'], c_s['product'], c_s['text'])
-    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-          format('c(s,time)', c_sw[('cord', 'time')], c_sw[('division', 'time')], c_sw[('formation', 'time')], \
-                 c_sw[('phone', 'time')], c_sw[('product', 'time')], c_sw[('text', 'time')])
-    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-          format('c(s,loss)', c_sw[('cord', 'loss')], c_sw[('division', 'loss')], c_sw[('formation', 'loss')], \
-                 c_sw[('phone', 'loss')], c_sw[('product', 'loss')], c_sw[('text', 'loss')])
-    print '{:<11} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} | {:<10} |'.\
-          format('c(s,export)', c_sw[('cord', 'export')], c_sw[('division', 'export')], c_sw[('formation', 'export')], \
-                 c_sw[('phone', 'export')], c_sw[('product', 'export')], c_sw[('text', 'export')])
-    print '------------------------------------------------------------------------------------------'
-    print ' total distinct words: %d ' % (len(t_dw.keys()))
-
-  # Part 2.2 (p_s/p_ws)
-  total_occurances = float(sum(c_s.values()))
-  label_count      = Counter(train_labels)
-  p_s  = {key: (value / float( sum( label_count.values() )) ) for key, value in label_count.iteritems()}
-  if improved:
-    p_ws = {key: ( (value + alpha) / \
-                   (float(c_s[key[0]]) + alpha*len(t_dw.keys())) ) \
-                   for key, value in c_sw.iteritems()}
-    t_ws = {key: ( (value + alpha) / \
-                   (float(c_s[key[0]]) + alpha*len(t_dw.keys())) ) \
-                   for key, value in t_sw.iteritems()}
-  else:
-    p_ws = {key: (value / float(c_s[key[0]])) for key, value in c_sw.iteritems()}
-    t_ws = {key: (value / float(c_s[key[0]])) for key, value in t_sw.iteritems()}
-
-  # normalization steps
-  norm_denominators = {
-      'time': 0.0, 
-      'loss': 0.0, 
-      'export': 0.0
-    }
-  for key, value in p_ws.iteritems():
-    norm_denominators[key[1]] += value
-  p_ws_norm = {key: (value / norm_denominators[key[1]]) for key, value in p_ws.iteritems()}
-  p_ws = p_ws_norm
-
-  if not silent:
-    print '------------------------------------------------------------------------------------------'
-    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-          format('p(s)', p_s['cord'], p_s['division'], p_s['formation'], p_s['phone'], p_s['product'], p_s['text'])
-    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-          format('p(time|s)', p_ws[('cord', 'time')], p_ws[('division', 'time')], p_ws[('formation', 'time')], \
-                 p_ws[('phone', 'time')], p_ws[('product', 'time')], p_ws[('text', 'time')])
-    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-          format('p(loss|s)', p_ws[('cord', 'loss')], p_ws[('division', 'loss')], p_ws[('formation', 'loss')], \
-                 p_ws[('phone', 'loss')], p_ws[('product', 'loss')], p_ws[('text', 'loss')])
-    print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-          format('p(export|s)', p_ws[('cord', 'export')], p_ws[('division', 'export')], p_ws[('formation', 'export')], \
-                 p_ws[('phone', 'export')], p_ws[('product', 'export')], p_ws[('text', 'export')])
-
-  # Part 2.3 (p_sxd, on the 1st line on test set)
-  p_sxd  = dict.fromkeys(c_s.keys(), 0.0)
-  lp_sxd = dict.fromkeys(c_s.keys(), 0.0)
-  cur_text = dev_texts[0]
-  for key in p_sxd.keys():
-    # compute p for each class
-    if improved:
-      tp_sxd  = p_s[key]
-      tlp_sxd = log(p_s[key])
-    else:
-      tp_sxd  = p_s[key]
-    # compute for each word
-    for each_word in cur_text:
-      if t_ws.has_key((key, each_word)):
-        if improved:
-          tp_sxd  *= t_ws[(key, each_word)]
-          tlp_sxd += log(t_ws[(key, each_word)])
-        else:
-          tp_sxd  *= t_ws[(key, each_word)]
-    # add to the dict
-    if improved:
-      p_sxd[key]  = tp_sxd
-      lp_sxd[key] = tlp_sxd
-    else:
-      p_sxd[key]  = tp_sxd
-
-  if not silent:
-    print '------------------------------------------------------------------------------------------'
-    print ' %s | %s | %s | %s | %s | %s | %s |' % \
-          ('p(s|X)', p_sxd['cord'], p_sxd['division'], p_sxd['formation'], \
-                     p_sxd['phone'], p_sxd['product'], p_sxd['text'])
-    print '------------------------------------------------------------------------------------------'
-    print ' 1st label in dev    : %s ' % (dev_labels[0])
-    print ' 1st text  in dev[:5]: %s ' % (dev_texts[0][:5])
-    if improved:
-      print '------------------------------------------------------------------------------------------'
-      print '{:<11} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} | {:<10.8f} |'.\
-            format('log(p(s|X))', lp_sxd['cord'], lp_sxd['division'], lp_sxd['formation'], \
-                                  lp_sxd['phone'], lp_sxd['product'], lp_sxd['text'])
-
-  # Part 2.4: compute all the prob on the test dataset
-  p_sx = list()
-  for idx, text in enumerate(test_texts):
-    t_prob = dict.fromkeys(c_s.keys(), 0.0)
-    for key in t_prob.keys():
-      # compute p for each class
-      if improved:
-        tp_sxt  = log(p_s[key])
-      else:
-        tp_sxt  = p_s[key]
-      for each_word in text:
-        if t_ws.has_key((key, each_word)):
-          if improved:
-            tp_sxt += log(t_ws[(key, each_word)])
-          else:
-            tp_sxt *= t_ws[(key, each_word)]
-      # add to the dict
-      t_prob[key] = tp_sxt
-    # add dict to the entire list
-    p_sx.append(t_prob)
-
-  # Part 2.4 (run the classifier for all)
-  labels_predicted = list()
-  for idx, label in enumerate(test_labels):
-    maximum_probs    = max(p_sx[idx].values())
-    label_prediction = [key for key, value in p_sx[idx].iteritems() if value == maximum_probs]
-    label_prediction = random.choice(label_prediction)
-    # based on the prob
-    labels_predicted.append(label_prediction)
-  naivebayes_performance = eval_performance(test_labels, labels_predicted)
-
-  # Part 2.5 (do more tuning for the classifier)
-  #  - Laplace smoothing
-  #  - Log likelihoods
-  if not silent:
-    print '------------------------------------------------------------------------------------------'
-  return 'Naive Bayes: micro/macro = [%.2f, %.2f] @ (alpha: %s)' % \
-          (naivebayes_performance[0]*100, naivebayes_performance[1]*100, alpha)
-
+  """
+  **Your final classifier implementation of part 2 goes here**
+  """
+  pass
 
 ## extract all the distinct words from a set of texts
 ## return a dictionary {word:index} that maps each word to a unique index
@@ -312,16 +144,20 @@ def get_predicted_label(inst,class_labels,theta):
   predicted_label = max(all_labels_scores.iteritems(), key=operator.itemgetter(1))[0]
   return predicted_label
 
-## train the perceptron by iterating over the entire training dataset
-## the algorithm is an implementation of the pseudocode from Slide #23 of:
+## train the averaged perceptron by iterating over the entire training dataset
+## the algorithm is an implementation of the pseudocode from Slide #25 of:
 ## http://www.cs.umd.edu/class/fall2016/cmsc723/slides/slides_03.pdf
 def train_perceptron(train_features,train_labels,class_labels,num_features):
-  NO_MAX_ITERATIONS = 20
+  RUN_3_2_EXP = False
+
+  NO_MAX_ITERATIONS = 30
   np.random.seed(0)
 
   theta = np.zeros(num_features)
 
   print '# Training Instances:',len(train_features)
+
+  training_set_accuracies = []
 
   num_iterations = 0
   cnt_updates_total = 0
@@ -344,6 +180,12 @@ def train_perceptron(train_features,train_labels,class_labels,num_features):
               m = m + theta
 
           num_iterations += 1
+          # Part 3.2
+          if RUN_3_2_EXP and num_iterations < 30 and cnt_updates_total > 0:
+              theta_temp = m/cnt_updates_total
+              train_predictions = test_perceptron(theta_temp,train_features,train_labels,class_labels)
+              eval_train = eval_performance(train_labels,train_predictions)
+              training_set_accuracies.append(str(int(eval_train[0]*100)))
 
       print cnt_updates_total,'/',cnt_updates_crt
       if cnt_updates_crt == 0:
@@ -353,6 +195,9 @@ def train_perceptron(train_features,train_labels,class_labels,num_features):
   print '# Iterations:',piter
   print '# Iterations over instances:',num_iterations
   print '# Total Updates:',cnt_updates_total
+  print '##########################\n'
+  if RUN_3_2_EXP:
+      print 'training_set_accuracies: ',','.join(training_set_accuracies)
   return theta
 
 ## return the predictions of the perceptron on a test set
@@ -371,7 +216,7 @@ The same thing applies to the reset of the parameters.
 
 """
 def run_bow_perceptron_classifier(train_texts, train_targets,train_labels,
-				dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
+        dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
   all_words_idx = extract_all_words(train_texts)
   all_labels_idx = extract_all_labels(train_labels)
 
@@ -388,6 +233,25 @@ def run_bow_perceptron_classifier(train_texts, train_targets,train_labels,
         ffl = get_features_for_label(inst,l,class_labels)
         assert False not in (inst == ffl[l*len(inst):(l+1)*len(inst)])
 
+  RUN_3_1_EXP = False
+  # Part 3.1
+  if RUN_3_1_EXP:
+      print 'Running EXP 3.1: '
+      modified_words_str = ''
+      theta = train_perceptron(train_features[0:1],train_labels[0:1],class_labels,num_features)
+      actual_class_features = theta[len(all_words_idx.keys())*train_labels[0]:(train_labels[0]+1)*len(all_words_idx.keys())]
+
+      modified_features_indices = np.where(actual_class_features != 0)[0]
+      modified_features_values = actual_class_features[modified_features_indices]
+      for i,mi in enumerate(modified_features_indices):
+          affected_word = filter(lambda w: all_words_idx[w] == mi,all_words_idx.keys())
+          modified_words_str += '%s:%.1lf, ' % (affected_word[0],modified_features_values[i])
+          assert affected_word[0] in train_texts[0]
+
+      print modified_words_str[:-2]
+      assert len(modified_features_values) == len(set(train_texts[0]))
+      exit()
+
   theta = train_perceptron(train_features,train_labels,class_labels,num_features)
   test_predictions = test_perceptron(theta,test_features,test_labels,class_labels)
   eval_test = eval_performance(test_labels,test_predictions)
@@ -403,12 +267,11 @@ The same thing applies to the reset of the parameters.
 
 """
 def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labels,
-				dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
-	"""
-	**Your final implementation of Part 4 with perceptron classifier**
-	"""
-	pass
-
+        dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
+  """
+  **Your final implementation of Part 4 with perceptron classifier**
+  """
+  pass
 
 ## this feature is just a random number generated for each instance
 def get_feature_A(train_texts, train_targets,train_labels,
@@ -514,29 +377,14 @@ def run_inner_annotator_agreement(train_texts, train_targets,train_labels,
 
     return '%.2f' % sklearn.metrics.cohen_kappa_score(dev_labels[:20],dev_labels_manual)
 
-
-"""
-    Main (able to change the classifier to other ones)
-"""
 if __name__ == "__main__":
     # reading, tokenizing, and normalizing data
     train_labels, train_targets, train_texts = read_dataset('train')
     dev_labels, dev_targets, dev_texts = read_dataset('dev')
     test_labels, test_targets, test_texts = read_dataset('test')
 
-<<<<<<< HEAD
     #running the classifier
     test_scores = run_extended_bow_perceptron_classifier(train_texts, train_targets, train_labels,
         dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
 
     print test_scores
-=======
-    # running the classifier
-    set_of_alphas = [0.04]
-    # [0.022, 0.024, 0.026, 0.028, 0.03, 0.032, 0.034, 0.036, 0.038]
-    # [0.00001, 0.0001, 0.001, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 2.0, 4.0]
-    for each_alpha in set_of_alphas:
-      test_scores = run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
-          dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels, alpha=each_alpha)
-      print test_scores
->>>>>>> origin/master

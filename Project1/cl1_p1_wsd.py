@@ -7,7 +7,9 @@ import random
 import itertools
 from math import pow, log
 from collections import Counter
-
+import os
+import sys
+sys.stdout = open(os.devnull, 'w')
 
 """
 CMSC723 / INST725 / LING723 -- Fall 2016
@@ -400,6 +402,16 @@ def run_bow_perceptron_classifier(train_texts, train_targets,train_labels,
   theta = train_perceptron(train_features,train_labels,class_labels,num_features)
   test_predictions = test_perceptron(theta,test_features,test_labels,class_labels)
   eval_test = eval_performance(test_labels,test_predictions)
+
+  inverse_labels_index = {}
+  for k in all_labels_idx.keys():
+      inverse_labels_index[all_labels_idx[k]] = k
+  test_predictions_names = map(lambda e: inverse_labels_index[e],test_predictions)
+
+  with open('q3p3.txt', 'wb') as file_output:
+    for each_label in test_predictions_names:
+      file_output.write(each_label+'\n')
+
   return ('test-micro=%d%%, test-macro=%d%%' % (int(eval_test[0]*100),int(eval_test[1]*100)))
 
 
@@ -423,8 +435,8 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
 
   # feature extensions (A)
   if 'A' in RUN_EXP:
-    train_features, dev_features, test_features = get_feature_A(train_texts, train_targets, train_labels, 
-                                                                dev_texts, dev_targets, dev_labels, 
+    train_features, dev_features, test_features = get_feature_A(train_texts, train_targets, train_labels,
+                                                                dev_texts, dev_targets, dev_labels,
                                                                 test_texts, test_targets, test_labels)
     for idx, each_text in enumerate(train_texts):
       each_text.append(str(float(train_features[idx])))
@@ -434,8 +446,8 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
       each_text.append(str(float(test_features[idx])))
   # feature extensions (B)
   elif 'B' in RUN_EXP:
-    train_features, dev_features, test_features = get_feature_B(train_texts, train_targets, train_labels, 
-                                                                dev_texts, dev_targets, dev_labels, 
+    train_features, dev_features, test_features = get_feature_B(train_texts, train_targets, train_labels,
+                                                                dev_texts, dev_targets, dev_labels,
                                                                 test_texts, test_targets, test_labels)
     for idx, each_text in enumerate(train_texts):
       each_text.append(str(int(train_features[idx])))
@@ -445,11 +457,11 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
       each_text.append(str(int(test_features[idx])))
   # feature extensions with both two A and B
   elif 'Both' in RUN_EXP:
-    train_features_A, dev_features_A, test_features_A = get_feature_A(train_texts, train_targets, train_labels, 
-                                                                      dev_texts, dev_targets, dev_labels, 
+    train_features_A, dev_features_A, test_features_A = get_feature_A(train_texts, train_targets, train_labels,
+                                                                      dev_texts, dev_targets, dev_labels,
                                                                       test_texts, test_targets, test_labels)
-    train_features_B, dev_features_B, test_features_B = get_feature_B(train_texts, train_targets, train_labels, 
-                                                                      dev_texts, dev_targets, dev_labels, 
+    train_features_B, dev_features_B, test_features_B = get_feature_B(train_texts, train_targets, train_labels,
+                                                                      dev_texts, dev_targets, dev_labels,
                                                                       test_texts, test_targets, test_labels)
     for idx, each_text in enumerate(train_texts):
       each_text.append(str(float(train_features_A[idx])))
@@ -681,17 +693,21 @@ The same thing applies to the reset of the parameters.
 def run_extended_bow_perceptron_classifier(train_texts, train_targets,train_labels,
         dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels):
 
-  RUN_EXP_A = False # set to False for running on feature B
+  RUN_EXP_A = True # set to True for running on feature A
+  RUN_EXP_B = True # set to True for running on feature B
+  num_extra_features = 0
 
   if RUN_EXP_A:
-      train_new_feature_vector,dev_new_feature_vector,test_new_feature_vector = get_feature_A(train_texts, train_targets,train_labels, dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels)
-  else:
-      train_new_feature_vector,dev_new_feature_vector,test_new_feature_vector = get_feature_B(train_texts, train_targets,train_labels, dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels)
+      train_new_feature_vectorA,dev_new_feature_vectorA,test_new_feature_vectorA = get_feature_A(train_texts, train_targets,train_labels, dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels)
+      num_extra_features += 1
+  if RUN_EXP_B:
+      train_new_feature_vectorB,dev_new_feature_vectorB,test_new_feature_vectorB = get_feature_B(train_texts, train_targets,train_labels, dev_texts, dev_targets,dev_labels, test_texts, test_targets, test_labels)
+      num_extra_features += 1
 
   all_words_idx = extract_all_words(train_texts)
   all_labels_idx = extract_all_labels(train_labels)
 
-  num_features = (len(all_words_idx.keys())+1)*len(all_labels_idx.keys())+1
+  num_features = (len(all_words_idx.keys())+num_extra_features)*len(all_labels_idx.keys())+1
   class_labels = all_labels_idx.values()
 
   train_features = extract_features(all_words_idx,all_labels_idx,train_texts)
@@ -699,8 +715,12 @@ def run_extended_bow_perceptron_classifier(train_texts, train_targets,train_labe
   test_features = extract_features(all_words_idx,all_labels_idx,test_texts)
   test_labels = map(lambda e: all_labels_idx[e],test_labels)
 
-  train_features = np.c_[train_features, train_new_feature_vector]
-  test_features = np.c_[test_features, test_new_feature_vector]
+  if RUN_EXP_A:
+      train_features = np.c_[train_features, train_new_feature_vectorA]
+      test_features = np.c_[test_features, test_new_feature_vectorA]
+  if RUN_EXP_B:
+      train_features = np.c_[train_features, train_new_feature_vectorB]
+      test_features = np.c_[test_features, test_new_feature_vectorB]
 
   for l in class_labels:
         inst = train_features[0]
@@ -710,6 +730,17 @@ def run_extended_bow_perceptron_classifier(train_texts, train_targets,train_labe
   theta = train_perceptron(train_features,train_labels,class_labels,num_features)
   test_predictions = test_perceptron(theta,test_features,test_labels,class_labels)
   eval_test = eval_performance(test_labels,test_predictions)
+
+  inverse_labels_index = {}
+  for k in all_labels_idx.keys():
+      inverse_labels_index[all_labels_idx[k]] = k
+  test_predictions_names = map(lambda e: inverse_labels_index[e],test_predictions)
+
+  with open('q4p4_pn.txt', 'wb') as file_output:
+    for each_label in test_predictions_names:
+      file_output.write(each_label+'\n')
+
+
   return ('test-micro=%d%%, test-macro=%d%%' % (int(eval_test[0]*100),int(eval_test[1]*100)))
 
 
@@ -751,7 +782,7 @@ if __name__ == "__main__":
     test_labels, test_targets, test_texts = read_dataset('test')
 
     #running the classifier
-    test_scores = run_extended_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
+    test_scores = run_bow_perceptron_classifier(train_texts, train_targets, train_labels,
         dev_texts, dev_targets, dev_labels, test_texts, test_targets, test_labels)
 
     print test_scores

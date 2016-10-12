@@ -244,6 +244,11 @@ def run_bow_naivebayes_classifier(train_texts, train_targets, train_labels,
     labels_predicted.append(label_prediction)
   naivebayes_performance = eval_performance(test_labels, labels_predicted)
 
+  # save the implementation to the file
+  with open('q4p2.txt', 'wb') as q4p2_output:
+    for each_label in labels_predicted:
+      q4p2_output.write(each_label+'\n')
+
   # Part 2.5 (do more tuning for the classifier)
   #  - Laplace smoothing
   #  - Log likelihoods
@@ -414,7 +419,7 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
   alpha    = 0.04
   silent   = True
 
-  RUN_EXP  = 'A' # set to 'B' or None
+  RUN_EXP  = 'Both' # set to 'B', None, or 'Both'
 
   # feature extensions (A)
   if 'A' in RUN_EXP:
@@ -438,6 +443,23 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
       each_text.append(str(int(dev_features[idx])))
     for idx, each_text in enumerate(test_texts):
       each_text.append(str(int(test_features[idx])))
+  # feature extensions with both two A and B
+  elif 'Both' in RUN_EXP:
+    train_features_A, dev_features_A, test_features_A = get_feature_A(train_texts, train_targets, train_labels, 
+                                                                      dev_texts, dev_targets, dev_labels, 
+                                                                      test_texts, test_targets, test_labels)
+    train_features_B, dev_features_B, test_features_B = get_feature_B(train_texts, train_targets, train_labels, 
+                                                                      dev_texts, dev_targets, dev_labels, 
+                                                                      test_texts, test_targets, test_labels)
+    for idx, each_text in enumerate(train_texts):
+      each_text.append(str(float(train_features_A[idx])))
+      each_text.append(str(int(train_features_B[idx])))
+    for idx, each_text in enumerate(dev_texts):
+      each_text.append(str(float(dev_features_A[idx])))
+      each_text.append(str(intern(train_features_B[idx])))
+    for idx, each_text in enumerate(test_texts):
+      each_text.append(str(float(test_features_A[idx])))
+      each_text.append(str(int(train_features_B[idx])))
   else:
     train_features, dev_features, test_features = None, None, None
 
@@ -598,6 +620,11 @@ def run_extended_bow_naivebayes_classifier(train_texts, train_targets,train_labe
     # based on the prob
     labels_predicted.append(label_prediction)
   naivebayes_performance = eval_performance(test_labels, labels_predicted)
+
+  # save the implementation to the file
+  with open('q4p4_nb.txt', 'wb') as q4p4_nb_output:
+    for each_label in labels_predicted:
+      q4p4_nb_output.write(each_label+'\n')
 
   # Part 2.5 (do more tuning for the classifier)
   #  - Laplace smoothing

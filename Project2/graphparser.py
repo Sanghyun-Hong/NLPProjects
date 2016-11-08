@@ -199,35 +199,36 @@ def iterCoNLL(filename):
 """
     Main (to evaluate)
 """
+if __name__ == "__main__":
 
-# GraphParser (Marine's 1st present: testGraph)
-testGraph = nx.Graph()
-testGraph.add_node(0, {'word': '*root*',   'pos': '*root*'})
-testGraph.add_node(1, {'word': 'the',      'pos': 'DT'})
-testGraph.add_node(2, {'word': 'hairy',    'pos': 'JJ'})
-testGraph.add_node(3, {'word': 'monster',  'pos': 'NN'})
-testGraph.add_node(4, {'word': 'ate',      'pos': 'VB'})
-testGraph.add_node(5, {'word': 'tasty',    'pos': 'JJ'})
-testGraph.add_node(6, {'word': 'little',   'pos': 'JJ'})
-testGraph.add_node(7, {'word': 'children', 'pos': 'NN'})
-testGraph.add_edge(1, 3, {})   # the -> monster
-testGraph.add_edge(2, 3, {})   # hairy -> monster
-testGraph.add_edge(3, 4, {})   # monster -> ate
-testGraph.add_edge(4, 0, {})   # ate -> root
-testGraph.add_edge(5, 7, {})   # tasty -> children
-testGraph.add_edge(6, 7, {})   # little -> children
-testGraph.add_edge(7, 4, {})   # children -> ate
+    # GraphParser (Marine's 1st present: testGraph)
+    testGraph = nx.Graph()
+    testGraph.add_node(0, {'word': '*root*',   'pos': '*root*'})
+    testGraph.add_node(1, {'word': 'the',      'pos': 'DT'})
+    testGraph.add_node(2, {'word': 'hairy',    'pos': 'JJ'})
+    testGraph.add_node(3, {'word': 'monster',  'pos': 'NN'})
+    testGraph.add_node(4, {'word': 'ate',      'pos': 'VB'})
+    testGraph.add_node(5, {'word': 'tasty',    'pos': 'JJ'})
+    testGraph.add_node(6, {'word': 'little',   'pos': 'JJ'})
+    testGraph.add_node(7, {'word': 'children', 'pos': 'NN'})
+    testGraph.add_edge(1, 3, {})   # the -> monster
+    testGraph.add_edge(2, 3, {})   # hairy -> monster
+    testGraph.add_edge(3, 4, {})   # monster -> ate
+    testGraph.add_edge(4, 0, {})   # ate -> root
+    testGraph.add_edge(5, 7, {})   # tasty -> children
+    testGraph.add_edge(6, 7, {})   # little -> children
+    testGraph.add_edge(7, 4, {})   # children -> ate
 
-# GraphParser: compute the weight three times
-weights = Weights()
-runOneExample(weights, testGraph)
-runOneExample(weights, testGraph)
-runOneExample(weights, testGraph)
+    # GraphParser: compute the weight three times
+    weights = Weights()
+    runOneExample(weights, testGraph)
+    runOneExample(weights, testGraph)
+    runOneExample(weights, testGraph)
 
-# GraphParser (Marine's 2nd present: realistic data)
-weights = Weights()
-for interation in range(5):
-    totalErr = 0.
-    for G in iterCoNLL('en.tr100'): 
-        totalErr += runOneExample(weights, G, quiet=True)
-    print totalErr
+    # GraphParser (Marine's 2nd present: realistic data)
+    weights = Weights()
+    for interation in range(5):
+        totalErr = 0.
+        for G in iterCoNLL('en.tr100'): 
+            totalErr += runOneExample(weights, G, quiet=True)
+        print totalErr

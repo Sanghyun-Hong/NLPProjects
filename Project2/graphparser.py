@@ -59,13 +59,12 @@ def computeFullGraph(inputGraph):
 #   {'w_pair=*root*_tasty': 1.0, 'p_pair=*root*_JJ': 1.0, 'dist=5': 1.0, 'weight': 0.0}
 
 
-
 # we need a function that will score the edges according to our
 # current weight vector:
 def computeGraphEdgeWeights(graph, weights):
     for i,j in graph.edges_iter():
         graph[i][j]['weight'] = 0.   # make sure it doesn't make its way into the dot product
-        # TODO: your code here
+        # intialize the weights w.r.t. the input weights
         graph[i][j]['weight'] = weights.dotProduct(graph[i][j])
 
         
@@ -97,13 +96,13 @@ def perceptronUpdate(weights, G, true, pred):
     # first, iterate over all the edges in the predicted tree that
     # aren't in the true tree -- hint, use weights.update
     for i,j in pred.edges_iter():
-        if true.has_edge(i,j) or true.has_edge(j,i): continue 
-        weights.update(G[i][j], -1) 
+        if true.has_edge(i,j) or true.has_edge(j,i): continue   # skip
+        weights.update(G[i][j], -1)
         
     # first, iterate over all the edges in the true tree that
     # aren't in the predicted tree -- hint, use weights.update
     for i,j in true.edges_iter():
-        if pred.has_edge(i,j) or pred.has_edge(j,i): continue
+        if pred.has_edge(i,j) or pred.has_edge(j,i): continue   # skip
         weights.update(G[i][j], 1)
     
 # now we can finally put it all together to make a single update on a

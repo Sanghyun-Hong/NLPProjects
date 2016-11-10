@@ -126,7 +126,7 @@ def runOneExample(weights, trueGraph, quiet=False):
         print ''
     
     # if necessary, make an update
-    if err > 0:
+    if err > 0.:
         perceptronUpdate(weights, G, trueGraph, predGraph)
 
     return err

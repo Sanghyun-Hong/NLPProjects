@@ -293,7 +293,7 @@ def printPrediction(filename, Graph):
     for nid in Graph.nodes():
         curnode = Graph.node[nid]
         # skip the root (don't need to print)
-        if curnode['word'] in '*root*':
+        if curnode['word'] == '*root*':
             continue
         oneline = [str(nid), curnode['word'], curnode['lemma'], curnode['cpos'],\
                              curnode['pos'],  curnode['feats'], curnode['head'],\

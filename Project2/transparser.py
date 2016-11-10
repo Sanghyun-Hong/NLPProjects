@@ -56,7 +56,7 @@ def computeOracleTransition(trueGraph, quiet=True):
         stid = depStack[-1]
         qtid = depBuffer[0]
         f = trueGraph.node[stid]
-        g = trueGraph.node[stid]
+        g = trueGraph.node[qtid]
 
         # [DEBUG]
         if not quiet:
@@ -98,8 +98,8 @@ def computeOracleTransition(trueGraph, quiet=True):
         # an unit feature
         feats = { 'w_stop=' + f['word']: 1.,
                   'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['word']: 1.,
-                  'cp_btop='+ g['word']: 1.,
+                  'cp_stop='+ f['cpos']: 1.,
+                  'cp_btop='+ g['cpos']: 1.,
                   'w_pair=' + f['word'] + '_' + g['word']: 1.,
                   'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
 
@@ -177,7 +177,7 @@ def perceptronUpdate(weights, graph):
 def runOneExample(weights, trueGraph, quiet=False):
     # first, compute the full graph and compute edge weights
     G = computeOracleTransition(trueGraph)
-    
+
     # make a prediction
     updatePredictTransitions(G)
 
@@ -245,7 +245,7 @@ def predictOneExampleHeads(testGraph, quiet=True):
         stid = depStack[-1]
         qtid = depBuffer[0]
         f = testGraph.node[stid]
-        g = testGraph.node[stid]
+        g = testGraph.node[qtid]
 
         # [DEBUG]
         if not quiet:
@@ -254,8 +254,8 @@ def predictOneExampleHeads(testGraph, quiet=True):
         # extract the feature
         feats = { 'w_stop=' + f['word']: 1.,
                   'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['word']: 1.,
-                  'cp_btop='+ g['word']: 1.,
+                  'cp_stop='+ f['cpos']: 1.,
+                  'cp_btop='+ g['cpos']: 1.,
                   'w_pair=' + f['word'] + '_' + g['word']: 1.,
                   'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
 

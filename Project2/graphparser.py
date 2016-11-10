@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
     # GraphParser (Marine's 2nd present: realistic data)
     weights = Weights()
-    for interation in range(5):
+    for iteration in range(5):
         totalErr = 0.
         for G in iterCoNLL('en.tr100'): 
             totalErr += runOneExample(weights, G, quiet=True)

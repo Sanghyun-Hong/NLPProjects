@@ -5,11 +5,13 @@ import sys
 from collections import deque
 
 # advanced
+import numpy as np
 import networkx as nx
 
 # debug
 import matplotlib.pyplot as plt
 
+MAGIC_CHAR = '<N>'
 
 # the first thing we do is define a Weights class that will store the
 # learned weights of the parser. this is just a dictionary that maps
@@ -50,15 +52,15 @@ class Weights(dict):
 def numMistakes(graph):
     err = 0.
     for nid in graph.nodes():
-        true_trans = graph.node[nid]['head']
-        pred_trans = graph.node[nid]['phead']
-        if true_trans == pred_trans: continue   # skip
+        true_head = graph.node[nid]['head']
+        pred_head = graph.node[nid]['phead']
+        if true_head == pred_head: continue   # skip
         err += 1
     return err
 
 # now we can finally put it all together to make a single update on a
 # single example
-def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet=False):
+def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet=True):
     
     # [AVG] perceptron
     cnt = 0
@@ -78,16 +80,72 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
         # two nodes, one for each stack/buffer
         stid = depStack[-1]
         qtid = depBuffer[0]
-        f = trueGraph.node[stid]
-        g = trueGraph.node[qtid]
+        s0 = trueGraph.node[stid]
+        s1 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        s2 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        q0 = trueGraph.node[qtid]
+        q1 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        q2 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        # case where it has more word in stack/buffer
+        if len(depStack) == 2:
+            s1id = depStack[-2]
+            s1 = trueGraph.node[s1id]
+        elif len(depStack) > 2:
+            s1id = depStack[-2]
+            s2id = depStack[-3]
+            s1 = trueGraph.node[s1id]
+            s2 = trueGraph.node[s2id]
+        if len(depBuffer) == 2:
+            q1id = depBuffer[1]
+            q1 = trueGraph.node[q1id]
+        elif len(depBuffer) > 2:
+            q1id = depBuffer[1]
+            q2id = depBuffer[2]
+            q1 = trueGraph.node[q1id]
+            q2 = trueGraph.node[q2id]
 
-        # extract features: suggested ones
-        feats = { 'w_stop=' + f['word']: 1.,
-                  'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['cpos']: 1.,
-                  'cp_btop='+ g['cpos']: 1.,
-                  'w_pair=' + f['word'] + '_' + g['word']: 1.,
-                  'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
+        # compute a new features: intermediates
+        #  - distance
+        distance = str(abs(stid - qtid))
+
+        # compuate a new features: from Zhang and Nivre's paper
+        feats = { 
+            # baseline features: sigle words
+            'w_stop='  + s0['word']: 1.,
+            'p_stop='  + s0['pos' ]: 1.,
+            'w_pstop=' + s0['word'] + '_' + s0['pos' ]: 1.,
+            'w_btop='  + q0['word']: 1.,
+            'p_btop='  + q0['pos' ]: 1.,
+            'w_pbtop=' + q0['word'] + '_' + q0['pos' ]: 1.,
+            'w_b2nd='  + q1['word']: 1.,
+            'p_b2nd='  + q1['pos' ]: 1.,
+            'w_pb2nd=' + q1['word'] + '_' + q1['pos' ]: 1.,
+            'w_b3rd='  + q2['word']: 1.,
+            'p_b3rd='  + q2['pos' ]: 1.,
+            'w_pb3rd=' + q2['word'] + '_' + q2['pos' ]: 1.,
+            # baseline features: from word pairs
+            's0wp_q0wp=' + s0['word'] + '_' + s0['pos' ] + '_' + q0['word'] + '_' + q0['pos' ]: 1.,
+            's0wp_q0w='  + s0['word'] + '_' + s0['pos' ] + '_' + q0['word']: 1.,
+            's0w_q0wp='  + s0['word'] + '_' + q0['word'] + '_' + q0['pos' ]: 1.,
+            's0wp_q0p='  + s0['word'] + '_' + s0['pos' ] + '_' + q0['pos' ]: 1.,
+            's0p_q0wp='  + s0['pos' ] + '_' + q0['word'] + '_' + q0['pos' ]: 1.,
+            's0w_q0w='   + s0['word'] + '_' + q0['word']: 1.,
+            's0p_q0p='   + s0['pos' ] + '_' + q0['pos' ]: 1.,
+            'q0p_q1p='   + q0['pos' ] + '_' + q1['pos' ]: 1.,
+            # baseline features: from three words
+            'q0p_q1p_q2p=' + q0['pos' ] + '_' + q1['pos' ] + '_' + q2['pos' ]: 1.,
+            's0p_q0p_q1p=' + s0['pos' ] + '_' + q0['pos' ] + '_' + q1['pos' ]: 1.,
+            
+            # new feature templates: distance between S0 and N0
+            's0_wd=' + s0['word'] + '_' + distance: 1.,
+            's0_pd=' + s0['pos' ] + '_' + distance: 1.,
+            'q0_wd=' + q0['word'] + '_' + distance: 1.,
+            'q0_pd=' + q0['pos' ] + '_' + distance: 1.,
+            's0w_q0wd=' + s0['word'] + '_' + q0['word'] + '_' + distance: 1.,
+            's0p_q0pd=' + s0['pos' ] + '_' + q0['pos' ] + '_' + distance: 1.,
+
+            # TBA
+        }
 
         #### [PREDICTED TRANSISION]
         rweight = weights.dotProduct('r', feats) + bias['r']
@@ -95,7 +153,7 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
         sweight = weights.dotProduct('s', feats) + bias['s']
         # select the biggest weight
         transps = [rweight, lweight, sweight]
-        transidx= transps.index(max(transps))
+        transidx= np.argmax(transps)
         # predict transition w.r.t. the weight
         pred_trans = -1
         if transidx == 0:   pred_trans = 'r'
@@ -221,22 +279,79 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
 
     # predict the heads by following the predictions (ARC-Standard)
     while depBuffer and depStack:
+        # prepare the variables to compute features
         stid = depStack[-1]
         qtid = depBuffer[0]
-        f = testGraph.node[stid]
-        g = testGraph.node[qtid]
+        s0 = testGraph.node[stid]
+        s1 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        s2 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        q0 = testGraph.node[qtid]
+        q1 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        q2 = { 'word': MAGIC_CHAR, 'pos': MAGIC_CHAR }
+        # case where it has more word in stack/buffer
+        if len(depStack) == 2:
+            s1id = depStack[-2]
+            s1 = testGraph.node[s1id]
+        elif len(depStack) > 2:
+            s1id = depStack[-2]
+            s2id = depStack[-3]
+            s1 = testGraph.node[s1id]
+            s2 = testGraph.node[s2id]
+        if len(depBuffer) == 2:
+            q1id = depBuffer[1]
+            q1 = testGraph.node[q1id]
+        elif len(depBuffer) > 2:
+            q1id = depBuffer[1]
+            q2id = depBuffer[2]
+            q1 = testGraph.node[q1id]
+            q2 = testGraph.node[q2id]
 
         # [DEBUG]
         if not quiet:
             print ' .. Configuration (before): %s | %s' % (depStack, depBuffer)
 
-        # extract features: suggested ones
-        feats = { 'w_stop=' + f['word']: 1.,
-                  'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['cpos']: 1.,
-                  'cp_btop='+ g['cpos']: 1.,
-                  'w_pair=' + f['word'] + '_' + g['word']: 1.,
-                  'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
+        # extract a new features: intermediates
+        #  - distance
+        distance = str(abs(stid - qtid))
+
+        # extract a new features: from Zhang and Nivre's paper
+        feats = { 
+            # baseline features: sigle words
+            'w_stop='  + s0['word']: 1.,
+            'p_stop='  + s0['pos' ]: 1.,
+            'w_pstop=' + s0['word'] + '_' + s0['pos' ]: 1.,
+            'w_btop='  + q0['word']: 1.,
+            'p_btop='  + q0['pos' ]: 1.,
+            'w_pbtop=' + q0['word'] + '_' + q0['pos' ]: 1.,
+            'w_b2nd='  + q1['word']: 1.,
+            'p_b2nd='  + q1['pos' ]: 1.,
+            'w_pb2nd=' + q1['word'] + '_' + q1['pos' ]: 1.,
+            'w_b3rd='  + q2['word']: 1.,
+            'p_b3rd='  + q2['pos' ]: 1.,
+            'w_pb3rd=' + q2['word'] + '_' + q2['pos' ]: 1.,
+            # baseline features: from word pairs
+            's0wp_q0wp=' + s0['word'] + '_' + s0['pos' ] + '_' + q0['word'] + '_' + q0['pos' ]: 1.,
+            's0wp_q0w='  + s0['word'] + '_' + s0['pos' ] + '_' + q0['word']: 1.,
+            's0w_q0wp='  + s0['word'] + '_' + q0['word'] + '_' + q0['pos' ]: 1.,
+            's0wp_q0p='  + s0['word'] + '_' + s0['pos' ] + '_' + q0['pos' ]: 1.,
+            's0p_q0wp='  + s0['pos' ] + '_' + q0['word'] + '_' + q0['pos' ]: 1.,
+            's0w_q0w='   + s0['word'] + '_' + q0['word']: 1.,
+            's0p_q0p='   + s0['pos' ] + '_' + q0['pos' ]: 1.,
+            'q0p_q1p='   + q0['pos' ] + '_' + q1['pos' ]: 1.,
+            # baseline features: from three words
+            'q0p_q1p_q2p=' + q0['pos' ] + '_' + q1['pos' ] + '_' + q2['pos' ]: 1.,
+            's0p_q0p_q1p=' + s0['pos' ] + '_' + q0['pos' ] + '_' + q1['pos' ]: 1.,
+            
+            # new feature templates: distance between S0 and N0
+            's0_wd=' + s0['word'] + '_' + distance: 1.,
+            's0_pd=' + s0['pos' ] + '_' + distance: 1.,
+            'q0_wd=' + q0['word'] + '_' + distance: 1.,
+            'q0_pd=' + q0['pos' ] + '_' + distance: 1.,
+            's0w_q0wd=' + s0['word'] + '_' + q0['word'] + '_' + distance: 1.,
+            's0p_q0pd=' + s0['pos' ] + '_' + q0['pos' ] + '_' + distance: 1.,
+
+            # TBA
+        }
 
         # predict the current transition
         rweight = weights.dotProduct('r', feats) + bias['r']
@@ -244,7 +359,7 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
         sweight = weights.dotProduct('s', feats) + bias['s']
         # select the biggest weight
         transps = [rweight, lweight, sweight]
-        transidx= transps.index(max(transps))
+        transidx= np.argmax(transps)
         # convert to str
         if transidx == 0:   transition = 'r'
         elif transidx == 1: transition = 'l'
@@ -264,7 +379,7 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
         # [DEBUG]
         if not quiet:
             print ' .. Configuration (after) : %s | %s' % (depStack, depBuffer)
-            print ' .. Gold transition: [%s] btn [%s, %s]' % (transidx, stid, qtid)
+            print ' .. Pred transition: [%s] btn [%s, %s]' % (transidx, stid, qtid)
 
 
 def printPrediction(filename, Graph):
@@ -308,7 +423,7 @@ if __name__ == "__main__":
     for iteration in range(num_epochs):
         total_err = 0.
         for G in iterCoNLL(train): 
-            (cur_cnt, cur_err) = runOneExample(total_cnt, bias, weights, tmp_bias, tmp_weis, G, quiet=True)
+            (cur_cnt, cur_err) = runOneExample(total_cnt, bias, weights, tmp_bias, tmp_weis, G)
             total_err += cur_err
             total_cnt += cur_cnt    # [AVG] perceptron
         print (total_cnt, total_err)

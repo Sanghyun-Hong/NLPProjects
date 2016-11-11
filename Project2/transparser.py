@@ -5,6 +5,7 @@ import sys
 from collections import deque
 
 # advanced
+import numpy as np
 import networkx as nx
 
 # debug
@@ -50,15 +51,15 @@ class Weights(dict):
 def numMistakes(graph):
     err = 0.
     for nid in graph.nodes():
-        true_trans = graph.node[nid]['head']
-        pred_trans = graph.node[nid]['phead']
-        if true_trans == pred_trans: continue   # skip
+        true_head = graph.node[nid]['head']
+        pred_head = graph.node[nid]['phead']
+        if true_head == pred_head: continue   # skip
         err += 1
     return err
 
 # now we can finally put it all together to make a single update on a
 # single example
-def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet=False):
+def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet=True):
     
     # [AVG] perceptron
     cnt = 0
@@ -78,16 +79,20 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
         # two nodes, one for each stack/buffer
         stid = depStack[-1]
         qtid = depBuffer[0]
-        f = trueGraph.node[stid]
-        g = trueGraph.node[qtid]
+        s0 = trueGraph.node[stid]
+        q0 = trueGraph.node[qtid]
+
+        # [DEBUG]
+        if not quiet:
+            print ' .. Configuration (before): %s | %s' % (depStack, depBuffer)
 
         # extract features: suggested ones
-        feats = { 'w_stop=' + f['word']: 1.,
-                  'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['cpos']: 1.,
-                  'cp_btop='+ g['cpos']: 1.,
-                  'w_pair=' + f['word'] + '_' + g['word']: 1.,
-                  'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
+        feats = { 'w_stop=' + s0['word']: 1.,
+                  'w_btop=' + q0['word']: 1.,
+                  'cp_stop='+ s0['cpos']: 1.,
+                  'cp_btop='+ q0['cpos']: 1.,
+                  'w_pair=' + s0['word'] + '_' + q0['word']: 1.,
+                  'cp_pair='+ s0['cpos'] + '_' + q0['cpos']: 1. }
 
         #### [PREDICTED TRANSISION]
         rweight = weights.dotProduct('r', feats) + bias['r']
@@ -95,7 +100,7 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
         sweight = weights.dotProduct('s', feats) + bias['s']
         # select the biggest weight
         transps = [rweight, lweight, sweight]
-        transidx= transps.index(max(transps))
+        transidx= np.argmax(transps)
         # predict transition w.r.t. the weight
         pred_trans = -1
         if transidx == 0:   pred_trans = 'r'
@@ -135,8 +140,6 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
             true_trans = 's'
         ########################
 
-        #print ' pred[%s] vs. true[%s]' % (pred_trans, true_trans)
-
         #### [UPDATES]
         if pred_trans != true_trans:
             # update weights ('r', 'l', 's') w.r.t true_trans
@@ -162,6 +165,11 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
         else:
             depStack.append(depBuffer.popleft())
         #################
+
+        # [DEBUG]
+        if not quiet:
+            print ' .. Configuration (after) : %s | %s' % (depStack, depBuffer)
+            print ' .. Gold transition: [%s] btn [%s, %s]' % (transidx, stid, qtid)
     #### end of while
 
     # compute the error
@@ -223,20 +231,20 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
     while depBuffer and depStack:
         stid = depStack[-1]
         qtid = depBuffer[0]
-        f = testGraph.node[stid]
-        g = testGraph.node[qtid]
+        s0 = testGraph.node[stid]
+        q0 = testGraph.node[qtid]
 
         # [DEBUG]
         if not quiet:
             print ' .. Configuration (before): %s | %s' % (depStack, depBuffer)
 
         # extract features: suggested ones
-        feats = { 'w_stop=' + f['word']: 1.,
-                  'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['cpos']: 1.,
-                  'cp_btop='+ g['cpos']: 1.,
-                  'w_pair=' + f['word'] + '_' + g['word']: 1.,
-                  'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
+        feats = { 'w_stop=' + s0['word']: 1.,
+                  'w_btop=' + q0['word']: 1.,
+                  'cp_stop='+ s0['cpos']: 1.,
+                  'cp_btop='+ q0['cpos']: 1.,
+                  'w_pair=' + s0['word'] + '_' + q0['word']: 1.,
+                  'cp_pair='+ s0['cpos'] + '_' + q0['cpos']: 1. }
 
         # predict the current transition
         rweight = weights.dotProduct('r', feats) + bias['r']
@@ -244,7 +252,7 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
         sweight = weights.dotProduct('s', feats) + bias['s']
         # select the biggest weight
         transps = [rweight, lweight, sweight]
-        transidx= transps.index(max(transps))
+        transidx= np.argmax(transps)
         # convert to str
         if transidx == 0:   transition = 'r'
         elif transidx == 1: transition = 'l'
@@ -264,7 +272,7 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
         # [DEBUG]
         if not quiet:
             print ' .. Configuration (after) : %s | %s' % (depStack, depBuffer)
-            print ' .. Gold transition: [%s] btn [%s, %s]' % (transidx, stid, qtid)
+            print ' .. Pred transition: [%s] btn [%s, %s]' % (transidx, stid, qtid)
 
 
 def printPrediction(filename, Graph):
@@ -308,7 +316,7 @@ if __name__ == "__main__":
     for iteration in range(num_epochs):
         total_err = 0.
         for G in iterCoNLL(train): 
-            (cur_cnt, cur_err) = runOneExample(total_cnt, bias, weights, tmp_bias, tmp_weis, G, quiet=True)
+            (cur_cnt, cur_err) = runOneExample(total_cnt, bias, weights, tmp_bias, tmp_weis, G)
             total_err += cur_err
             total_cnt += cur_cnt    # [AVG] perceptron
         print (total_cnt, total_err)

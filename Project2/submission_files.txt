@@ -1,0 +1,7 @@
+team.txt
+graphparser.py
+transparser.py
+en.tst.out
+fancydep.py
+en.tst.fancy.out
+whatwedid.txt

@@ -1,0 +1,27 @@
+We improved our classifier 'fancydep.py' with the following steps:
+
+1. At first, we checked the effect of training data ON our classifier 'transparser.py'. With the training set 'en.tr100' and the test set 'en.dev', the performance of the classifier is '38.240' percent. However, we see that the performance can increase up to '42.741' percent, once we use a larger training set 'en.tr'. This means that the larger input sets to the classifier can help it generalize as well as solve the sparsity issue by decreasing the "unseen" cases on the test set.
+
+2. We harness "average perceptron" with "bias" terms to train our classifier. It's well-known that the perceptron style algorithms require a large number of epochs to train a classifier, so we examine the effect of these training epochs. The number of epochs that we tried vary between (1, 5, 10, 15, and 20), and the corresponding classifier performance for these epochs is: (37.206, 38.240, 36.595, 36.390, 36.903, and 36.706). Here, we can see that the performances increases for five epochs, but starts decreasing after that, implying that our classifier starts to overfit. There are techniques to solve this issue (e.g. shuffling the order of input in each epoch or importance sampling), nevertheless, we assure that the improvement is relatively small so we didn't implement them. We therefore fixed the classifier to five epochs for the remainder of the experiment. Here are the results from our experiments:
+
+ - Training Set: en.tr100, and Testing Set: en.dev
+  + epoch  1: 37.206 %
+  + epoch  5: 38.240 %
+  + epoch 10: 36.595 %
+  + epoch 15: 36.390 %
+  + epoch 20: 36.903 %
+
+3. Another step that we can take is to use rich features. We added two types of features from the Zhang and Nivre paper: baseline features and their new features. Those features are described in Table 1 and 2. They use larger windows for word and POS tags pairings, including pairs and triples from the top 2-3 elements on the buffer and stack. Unlike the features of 'transparser.py', those additional features considers neighbor words (2-3) at the top of the buffer and stack, which helps our classifier have more clear view of the configuration states. The clear view means that it can infer potential parent, children, or neighbors in the dependency tree. In addition, we add the CPOS information to the baseline and their new features as suggested in the paper. We achieved ’70.433' and ‘80.078’ percent performance on the 'en.dev' test set when training with 'en.tr100' and 'en.tr'. The detailed results from our experiments have are:
+
+ - Training Set: en.tr, and Testing Set: en.dev
+  + w/o CPOS features  : 78.4573 %
+  + CPOS features only : 78.3384 %
+  + Using both features: 80.0779 %
+
+As the 'en.tr' training set promises the better performance, we use this set for the remainder of our experiment. From the results, we can conclude that both features improved the classification task. It's interesting that using only the CPOS features shows the tie-performance to the case in which we use the rest of the features. However, the performance increase is not significant (as we expected) in using both features, thus, we believe that there's overlapping characteristic that both features capture.
+
+4. In addition to those features, we harness the distance metric between words at the top of the stack and buffer as Zhang and Nivre proposed in their paper. Combining distance to words or POS tags helps our classifier distinguish long-range dependencies from the short-range ones. The intuition behind the distinction is that two words are less likely to have an arc if they are far from each other in a sentence. We saw there's performance increases with the distance features, i.e:
+
+ - Training Set: en.tr100, and Testing Set: en.dev
+  + w/o distance features : 78.2400 %
+  + w   distance features : 80.3118 %

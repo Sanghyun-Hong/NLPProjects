@@ -32,36 +32,17 @@ class Weights(dict):
     # given an example _and_ a true label (y is +1 or -1), update the
     # weights according to the perceptron update rule (we assume
     # you've already checked that the classification is incorrect
-    def update(self, t, x, y, cnt=1):
+    def update(self, t, x, y):
         for feat,val in x.iteritems():
             if val != 0.:
-                self[t, feat] += y * val * cnt
-
-    # [AVG] perceptron: compute an average of weights
-    def average(self, x, cnt):
-        avg = {}
-        for feat,val in self.iteritems():
-            cnt_val   = x[feat]
-            avg[feat] = (val - ((1./cnt) * cnt_val))
-        return Weights(avg)
+                self[t, feat] += y * val
 
 
-# compute number of mistakes
-def numMistakes(graph):
-    err = 0.
-    for nid in graph.nodes():
-        true_trans = graph.node[nid]['head']
-        pred_trans = graph.node[nid]['phead']
-        if true_trans == pred_trans: continue   # skip
-        err += 1
-    return err
-
-# now we can finally put it all together to make a single update on a
-# single example
-def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet=False):
-    
-    # [AVG] perceptron
-    cnt = 0
+# we compute the oracle transitions and put them to the out(graph)
+# those transitions are used to update weights during traning
+def computeOracleTransition(trueGraph, quiet=True):
+    # create a training Graph to return
+    out = nx.Graph()
 
     # initialize the configurations
     depStack  = deque()
@@ -70,41 +51,18 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
         depBuffer.append(nid)
     depStack.append(depBuffer.popleft())    # move the *root*
 
-    # ARC-standard transitions (move on, update weights)
+    # compute the oracle transitions (ARC-Standard)
     while depBuffer and depStack:
-        # [AVG] perceptron
-        cnt += 1
-
-        # two nodes, one for each stack/buffer
         stid = depStack[-1]
         qtid = depBuffer[0]
         f = trueGraph.node[stid]
         g = trueGraph.node[qtid]
 
-        # extract features: suggested ones
-        feats = { 'w_stop=' + f['word']: 1.,
-                  'w_btop=' + g['word']: 1.,
-                  'cp_stop='+ f['cpos']: 1.,
-                  'cp_btop='+ g['cpos']: 1.,
-                  'w_pair=' + f['word'] + '_' + g['word']: 1.,
-                  'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
+        # [DEBUG]
+        if not quiet:
+            print ' .. Configuration (before): %s | %s' % (depStack, depBuffer)
 
-        #### [PREDICTED TRANSISION]
-        rweight = weights.dotProduct('r', feats) + bias['r']
-        lweight = weights.dotProduct('l', feats) + bias['l']
-        sweight = weights.dotProduct('s', feats) + bias['s']
-        # select the biggest weight
-        transps = [rweight, lweight, sweight]
-        transidx= transps.index(max(transps))
-        # predict transition w.r.t. the weight
-        pred_trans = -1
-        if transidx == 0:   pred_trans = 'r'
-        elif transidx == 1: pred_trans = 'l'
-        else:               pred_trans = 's'
-        ###########################
-
-        #### [ORACLE TRANSISION]
-        true_trans = -1
+        # examine the gold transition
         if trueGraph.node[qtid]['head'] == str(stid):
             # check if it's possible to remove qtid
             possible = True
@@ -115,8 +73,13 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
                 if trueGraph.node[item]['head'] == str(qtid):
                     possible = False
             # if possible remove qtid w. right
-            if possible: true_trans = 'r'
-            else:        true_trans = 's'
+            if possible:
+                transition = 'r'
+                depBuffer.popleft()
+                depBuffer.appendleft(depStack.pop())
+            else:
+                transition = 's'
+                depStack.append(depBuffer.popleft())
         elif trueGraph.node[stid]['head'] == str(qtid):
             # check if it's possible to remove stid
             possible = True
@@ -129,40 +92,102 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
                 if trueGraph.node[item]['head'] == str(stid):
                     possible = False
             # if possible remove stid w. left
-            if possible: true_trans = 'l'
-            else:        true_trans = 's'
+            if possible:
+                transition = 'l'
+                depStack.pop()
+            # else: does shift
+            else:
+                transition = 's'
+                depStack.append(depBuffer.popleft())
         else:
-            true_trans = 's'
-        ########################
-
-        #print ' pred[%s] vs. true[%s]' % (pred_trans, true_trans)
-
-        #### [UPDATES]
-        if pred_trans != true_trans:
-            # update weights ('r', 'l', 's') w.r.t true_trans
-            bias[true_trans] += 1
-            tmp_bias[true_trans] += 1 * (start_cnt+cnt)
-            weights.update( true_trans, feats, 1)
-            tmp_weis.update(true_trans, feats, 1, cnt=(start_cnt+cnt))
-            # update weights ('r', 'l', 's') w.r.t pred_trans
-            bias[pred_trans] += -1
-            tmp_bias[pred_trans] += -1 * (start_cnt+cnt)
-            weights.update( pred_trans, feats, -1)
-            tmp_weis.update(pred_trans, feats, -1, cnt=(start_cnt+cnt))
-        ##############
-
-        #### [TRANSITION]
-        if true_trans == 'r':
-            trueGraph.node[qtid]['phead'] = str(stid)
-            depBuffer.popleft()
-            depBuffer.appendleft(depStack.pop())
-        elif true_trans == 'l':
-            trueGraph.node[stid]['phead'] = str(qtid)
-            depStack.pop()
-        else:
+            transition = 's'
             depStack.append(depBuffer.popleft())
-        #################
-    #### end of while
+
+        # an unit feature
+        feats = { 'w_stop=' + f['word']: 1.,
+                  'w_btop=' + g['word']: 1.,
+                  'cp_stop='+ f['cpos']: 1.,
+                  'cp_btop='+ g['cpos']: 1.,
+                  'w_pair=' + f['word'] + '_' + g['word']: 1.,
+                  'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
+
+        # a set of informations at an edge
+        info  = dict()
+        info['feats']  = feats
+        info['otrans'] = transition
+        out.add_edge(stid, qtid, info)
+
+        # [DEBUG]
+        if not quiet:
+            print ' .. Configuration (after) : %s | %s' % (depStack, depBuffer)
+            print ' .. Gold transition: [%s] btn [%s, %s]' % (transition, stid, qtid)
+
+    # return the created Graph
+    return out
+
+
+# once we have a graph with weights on the edges, we need to be able
+# to make a prediction (i.e., compute the MST):
+def updatePredictTransitions(graph):
+    for i,j in graph.edges_iter():
+        feats = graph[i][j]['feats']
+        rweight = weights.dotProduct('r', feats)
+        lweight = weights.dotProduct('l', feats)
+        sweight = weights.dotProduct('s', feats)
+        # select the biggest weight
+        transps = [rweight, lweight, sweight]
+        transidx= transps.index(max(transps))
+        # predict transition w.r.t. the weight
+        if transidx == 0:   graph[i][j]['ptrans'] = 'r'
+        elif transidx == 1: graph[i][j]['ptrans'] = 'l'
+        else:               graph[i][j]['ptrans'] = 's'
+
+
+# compute number of mistakes
+def numMistakes(graph):
+    err = 0.
+    for i,j in graph.edges_iter():
+        if graph[i][j]['ptrans'] == graph[i][j]['otrans']: continue # skip
+        err += 1
+    return err
+
+
+# now, given a graph (which has features), a true tree and a predicted
+# tree, we want to update our weights
+def perceptronUpdate(weights, graph):
+    # update the weights in cases where 
+    # predict transition is not the same as the oracle transition
+    for i,j in graph.edges_iter():
+        # variables
+        feats  = graph[i][j]['feats']
+        ptrans = graph[i][j]['ptrans']
+        otrans = graph[i][j]['otrans']
+        # skip if correct
+        if ptrans == otrans : continue # skip
+        # update weights ('r', 'l', 's') w.r.t oracles
+        if otrans == 'r':
+            weights.update('r', feats, 1)
+        elif otrans == 'l':
+            weights.update('l', feats, 1)
+        else:
+            weights.update('s', feats, 1)
+        # update weights ('r', 'l', 's') w.r.t predictions
+        if ptrans == 'r':
+            weights.update('r', feats, -1)
+        elif ptrans == 'l':
+            weights.update('l', feats, -1)
+        else:
+            weights.update('s', feats, -1)
+
+
+# now we can finally put it all together to make a single update on a
+# single example
+def runOneExample(weights, trueGraph, quiet=False):
+    # first, compute the full graph and compute edge weights
+    G = computeOracleTransition(trueGraph)
+
+    # make a prediction
+    updatePredictTransitions(G)
 
     # compute the error
     err = numMistakes(G)
@@ -171,10 +196,14 @@ def runOneExample(start_cnt, bias, weights, tmp_bias, tmp_weis, trueGraph, quiet
     if not quiet:
         print 'error =', err, '\tpred =',
         for i,j in G.edges_iter():
-            print '(', trueGraph.node[i]['word'], '<->', trueGraph.node[j]['word'], ':', G[i][j]['phead'], ')',
+            print '(', trueGraph.node[i]['word'], '<->', trueGraph.node[j]['word'], ':', G[i][j]['ptrans'], ')',
         print ''
 
-    return (cnt, err)
+    # if necessary, make an update
+    if err > 0:
+        perceptronUpdate(weights, G)
+
+    return err
 
 
 def iterCoNLL(filename):
@@ -211,7 +240,7 @@ def iterCoNLL(filename):
 """
     Utility functions (prediction, print, etc.)
 """
-def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
+def predictOneExampleHeads(testGraph, quiet=True):
     # initialize the configurations
     depStack  = deque()
     depBuffer = deque()
@@ -230,7 +259,7 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
         if not quiet:
             print ' .. Configuration (before): %s | %s' % (depStack, depBuffer)
 
-        # extract features: suggested ones
+        # extract the feature
         feats = { 'w_stop=' + f['word']: 1.,
                   'w_btop=' + g['word']: 1.,
                   'cp_stop='+ f['cpos']: 1.,
@@ -239,9 +268,9 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
                   'cp_pair='+ f['cpos'] + '_' + g['cpos']: 1. }
 
         # predict the current transition
-        rweight = weights.dotProduct('r', feats) + bias['r']
-        lweight = weights.dotProduct('l', feats) + bias['l']
-        sweight = weights.dotProduct('s', feats) + bias['s']
+        rweight = weights.dotProduct('r', feats)
+        lweight = weights.dotProduct('l', feats)
+        sweight = weights.dotProduct('s', feats)
         # select the biggest weight
         transps = [rweight, lweight, sweight]
         transidx= transps.index(max(transps))
@@ -249,7 +278,7 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
         if transidx == 0:   transition = 'r'
         elif transidx == 1: transition = 'l'
         else:               transition = 's'
-
+        
         # assign heads w.r.t. the transitions
         if transition == 'r':   # right
             testGraph.node[qtid]['head'] = str(stid)
@@ -287,7 +316,7 @@ def printPrediction(filename, Graph):
     Main (to evalate)
 """
 if __name__ == "__main__":
-    # developing case: cmd, train, test, out = ['transparser.py', en.tr100', 'en.dev', 'en.dev.out' ]
+    # developing case: cmd, train, test, out = ['transparser.py', en.tr100', 'en.tr',  'en.tr.out' ]
     # evaluation case: cmd, train, test, out = ['transparser.py', en.tr100', 'en.tst', 'en.tst.out']
     if len(sys.argv) != 4:
         print 'Error: check the arguments (current: %s)' % (len(sys.argv))
@@ -297,25 +326,13 @@ if __name__ == "__main__":
     # control hyper-parameters
     num_epochs = 5
 
-    # weight variables: averaged perceptron
-    bias    = Weights()
-    weights = Weights()
-    tmp_bias= Weights()
-    tmp_weis= Weights()
-
     # from Marine's 2nd present in graphparser.py
-    total_cnt = 1   # [AVG] perceptron
+    weights = Weights()
     for iteration in range(num_epochs):
-        total_err = 0.
+        totalErr = 0.
         for G in iterCoNLL(train): 
-            (cur_cnt, cur_err) = runOneExample(total_cnt, bias, weights, tmp_bias, tmp_weis, G, quiet=True)
-            total_err += cur_err
-            total_cnt += cur_cnt    # [AVG] perceptron
-        print (total_cnt, total_err)
-
-    # [AVG] perceptron: average weights
-    avg_bias = bias.average(   tmp_bias, total_cnt)
-    avg_weis = weights.average(tmp_weis, total_cnt)
+            totalErr += runOneExample(weights, G, quiet=True)
+        print totalErr
 
     # remove the output file for a new output
     if os.path.isfile(out):
@@ -323,6 +340,6 @@ if __name__ == "__main__":
 
     # iterate over the test cases and create outputs
     for G in iterCoNLL(test):
-        predictOneExampleHeads(avg_bias, avg_weis, G)
+        predictOneExampleHeads(G)
         printPrediction(out, G)
 

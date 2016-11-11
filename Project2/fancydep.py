@@ -367,11 +367,11 @@ def predictOneExampleHeads(bias, weights, testGraph, quiet=True):
 
         # assign heads w.r.t. the transitions
         if transition == 'r':   # right
-            testGraph.node[qtid]['head'] = str(stid)
+            testGraph.node[qtid]['phead'] = str(stid)
             depBuffer.popleft()
             depBuffer.appendleft(depStack.pop())
         elif transition == 'l': # left
-            testGraph.node[stid]['head'] = str(qtid)
+            testGraph.node[stid]['phead'] = str(qtid)
             depStack.pop()
         else:               # shift
             depStack.append(depBuffer.popleft())
@@ -390,8 +390,8 @@ def printPrediction(filename, Graph):
         if curnode['word'] == '*root*':
             continue
         oneline = [str(nid), curnode['word'], curnode['lemma'], curnode['cpos'],\
-                             curnode['pos'],  curnode['feats'], curnode['head'],\
-                             curnode['drel'], curnode['phead'], curnode['pdrel']]
+                             curnode['pos'],  curnode['feats'], curnode['phead'],\
+                             curnode['drel'], '_',              curnode['pdrel']]
         outfile.write('\t'.join(oneline))
         outfile.write('\n')
     outfile.write('\n')

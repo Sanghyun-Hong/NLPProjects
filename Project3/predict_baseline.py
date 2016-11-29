@@ -6,15 +6,14 @@ from scipy import spatial
 
 DATA_DIR = '../data/'
 
-# read the Paragram embeddings from file
-# returns a dictionary {word:embeddings} where each embeddings is a 300x1 vector
-def read_word_embeddings():
-    embeddings = {}
-    model_file = os.path.join(DATA_DIR,'paragram-phrase-XXL.txt')
+
+def read_embedding_file(model_file,existing_embeddings):
+    embeddings = existing_embeddings
+
     if not os.path.exists(model_file):
         print 'Make sure you download the embeddings file under:',model_file
         exit(1)
-        
+
     for l in open(model_file,'r'):
         tokens = l.strip().split(' ')
         word = tokens[0].strip().lower()
@@ -22,6 +21,22 @@ def read_word_embeddings():
         assert len(weights) == 300
         embeddings[word] = weights
     return embeddings
+
+# read the Paragram embeddings from file
+# returns a dictionary {word:embeddings} where each embeddings is a 300x1 vector
+def read_word_embeddings():
+    embeddings = {}
+    model_file = os.path.join(DATA_DIR,'paragram_300_sl999.txt')
+    new_embeddings = read_embedding_file(model_file,embeddings)
+
+    print len(embeddings)
+
+    model_file = os.path.join(DATA_DIR,'paragram-phrase-XXL.txt')
+    all_embeddings = read_embedding_file(model_file,new_embeddings)
+
+    print len(embeddings)
+
+    return all_embeddings
 
 # use the nltk word tokenizer to tokenize a sentence and return the lower case token list
 def tokenize_sentence(sent):

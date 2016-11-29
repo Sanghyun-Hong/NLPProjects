@@ -1,0 +1,31 @@
+Feb 24, 2016
+
+SemEval 2016 Task 1: Cross-lingual STS 
+
+
+= Test Sets =
+
+The SemEval Task 1 Cross-lingual STS consisted of two test sets:
+* news (developed from newswire genre published in the winter of 2015) -> STS.input.news.txt
+* multi source (developed from manual translations into Spanish of one sentence in a pair using previously released English STS datasets) -> STS.input.multi.txt
+
+
+= Gold Standard =
+
+* news: The gold standard for the news dataset is provided in file "STS.gs.news.txt".
+* multi source: From the multi source dataset, a subset of 294 sentence pairs was annotated for text similarity. These can be found in file "STS.input.multisource.txt", and the associated human annotation through Mechanical Turk are saved in "STS.gs.multisource.txt". The indices of the mapping (assuming a starting index of 0) between the annotated subset ("STS.input.multisource.txt") and the test set released to participants ("STS.input.multi.txt") is available in file "multi.gs.mapping.lines.txt".
+
+
+= Running the evaluation script =
+
+ We are also providing a script to participants, that given a path to your original multi source submission file as an argument, the script will pick only the relevant scores in the correct order to allow you to easily run the evaluation script.
+	perl filter_multi_source_submission.pl STS.output.multi.txt > STS.output.multisource.txt
+
+The correlation between your submission and the gold standard can then be obtained by running:
+	perl correlation-noconfidence.pl <gs file> <your submission file>
+
+For example:
+perl correlation-noconfidence.pl STS.gs.multisource.txt STS.output.multisource.txt
+
+
+For any questions, contact Carmen Banea at carmen.banea@gmail.com

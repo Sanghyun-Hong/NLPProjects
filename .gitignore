@@ -2,3 +2,6 @@
 # compiled py files
 *.pyc
 data
+
+# the directory include large models
+Project3/models

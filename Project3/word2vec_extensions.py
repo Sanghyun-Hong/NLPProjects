@@ -8,7 +8,7 @@ import numpy as np
 import scipy as sp
 
 # word2vec
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec, Doc2Vec
 
 
 """
@@ -36,6 +36,9 @@ def read_model(modelname):
     # word2vec model: Google news (300 dimensions)
     if 'word2vec' in modelname.lower():
         cur_model = Word2Vec.load_word2vec_format(MODEL_LOC + '/' + MODEL_W2V, binary=True)
+    # doc2vec model:  APNews or Wikipedia corpus (300 dimensions)
+    elif 'doc2vec' in modelname.lower():
+        cur_model = Doc2Vec.load(MODEL_LOC + '/' + MODEL_D2V2) # or MODEL_D2V1
     else:
         assert False, 'Invalid model name: %s' % (modelname)
     return cur_model
@@ -80,7 +83,7 @@ def compute_cosine_similarity(embedding1, embedding2):
 if __name__ == '__main__':
 
     # read stored models
-    word2vec = read_model(MNAME_W2V)
+    word2vec = read_model(MNAME_W2V)    # MNAME_D2V
     print ' .. read the %s model complete ' % (word2vec)
 
     # do predictions

@@ -1,7 +1,7 @@
 # RESULTS: (0.88545+0.81606)/2 = 0.850755
 
 #DATASET=multisource # Pearson: 0.81606
-DATASET=news # Pearson: 0.88545
+#DATASET=news # Pearson: 0.88545
 
 echo "Dataset: $DATASET"
 

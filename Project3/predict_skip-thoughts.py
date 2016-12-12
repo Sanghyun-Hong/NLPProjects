@@ -2,69 +2,107 @@ import sys
 import os
 import re
 import nltk
+import json
 from scipy import spatial
 from skip_thoughts import skipthoughts
+from skip_thoughts import eval_sick
+
+DATA_DIR = '../data/'
 
 DATA_DIR = '../data/'
 
 
-#
-def read_word_embeddings():
-    model = skipthoughts.load_model()
-    return model
+def read_embedding_file(model_file,existing_embeddings):
+    embeddings = existing_embeddings
 
-# use the nltk word tokenizer to tokenize a sentence and return the lower case token list
-def tokenize_sentence(sent):
-    tokens = nltk.word_tokenize(sent)
-    tokens = map(lambda e: e.strip().lower(), tokens)
-    return tokens
-
-#
-def get_sentence_embeddings(sentence,embeddings):
-    vectors = skipthoughts.encode(embeddings, [sentence])
-    print vectors
-    print sentence
-    print len(vectors[0])
-    exit()
-    return vectors[0]
-
-# compute the cosine similarity between two embeddings as 1 - cosine_distance, scale it from 0-1 to 0-5
-def get_cosine_similarity(e1,e2):
-    cos_sim = 1.0 - spatial.distance.cosine(e1,e2)
-    sim = ( (cos_sim - 0.0) / (1.0 - 0.0) ) * (5.0 - 0.0) + 0.0
-    return sim
-
-def get_predictions():
-
-    if len(sys.argv) != 3:
-        print 'Usage: script <input_file> <output_file>'
+    if not os.path.exists(model_file):
+        print 'Make sure you download the embeddings file under:',model_file
         exit(1)
 
-    fn_in = sys.argv[1]
-    fn_out = sys.argv[2]
-    if not os.path.exists(fn_in):
-        print 'Input path does not exist.'
-        exit(1)
+    for l in open(model_file,'r'):
+        tokens = l.strip().split(' ')
+        word = tokens[0].strip().lower()
+        weights = map(lambda e: float(e),tokens[1:])
+        assert len(weights) == 300
+        embeddings[word] = weights
+    return embeddings
 
-    embeddings = read_word_embeddings()
+# read the Paragram embeddings from file
+# returns a dictionary {word:embeddings} where each embeddings is a 300x1 vector
+def read_word_embeddings(vocab=None):
 
-    f_in = open(fn_in,'r')
-    f_out = open(fn_out,'w')
-    for l in f_in:
-        s1,s2 = l.split('\t')
-        #s1t = tokenize_sentence(s1)
-        #s2t = tokenize_sentence(s2)
+    if vocab is not None:
+        vocab_path = '../data/vocab.json'
+        if os.path.exists(vocab_path):
+            return json.loads(open(vocab_path).read())
 
-        s1te = get_sentence_embeddings(s1,embeddings)
-        s2te = get_sentence_embeddings(s2,embeddings)
+    embeddings = {}
+    model_file = os.path.join(DATA_DIR,'paragram_300_sl999.txt')
+    new_embeddings = read_embedding_file(model_file,embeddings)
+    #new_embeddings = {}
+    print len(new_embeddings)
 
-        sim = get_cosine_similarity(s1te,s2te)
-        f_out.write('%0.3lf\n' % sim)
+    model_file = os.path.join(DATA_DIR,'paragram-phrase-XXL.txt')
+    all_embeddings = read_embedding_file(model_file,new_embeddings)
+    print len(all_embeddings)
+
+    if vocab is not None:
+        vocab_path = '../data/vocab.json'
+
+        vocab_dict = {}
+        for k in vocab:
+            emb = all_embeddings.get(k,None)
+            if emb is not None:
+                vocab_dict[k] = emb
+        jv = json.dumps(vocab_dict)
+        fo = open(vocab_path,'w')
+        fo.write(jv)
+        fo.close()
+        print len(vocab),len(vocab_dict)
+        return vocab_dict
+    return all_embeddings
+
+def read_word_embeddings_st(vocab=None):
+    vocab_path = '../data/vocab_st.json'
+    if vocab is not None:
+        if os.path.exists(vocab_path):
+            return json.loads(open(vocab_path).read())
+
+    model_sk = skipthoughts.load_model()
+
+    if vocab is not None:
+
+        vocab_dict = {}
+        for k in vocab:
+            emb = all_embeddings.get(k,None)
+            if emb is not None:
+                vocab_dict[k] = emb
+        jv = json.dumps(vocab_dict)
+        fo = open(vocab_path,'w')
+        fo.write(jv)
+        fo.close()
+        print len(vocab),len(vocab_dict)
+        return vocab_dict
+    return all_embeddings
 
 
-    f_out.close()
 
-#get_predictions()
-from skip_thoughts import eval_sick
-model = skipthoughts.load_model()
-eval_sick.evaluate(model, evaltest=True)
+
+vocab = []#eval_sick.get_vocabulary()
+
+print 'a'
+model_sk = []#skipthoughts.load_model()
+model_bl = []#read_word_embeddings(vocab)
+print 'b'
+
+model = {}
+model['skipthoughts'] = model_sk
+model['baseline'] = model_bl
+
+test_dataset = sys.argv[1]
+print 'test:',test_dataset
+preds = eval_sick.evaluate(model, evaltest=True,test_dataset=test_dataset)
+fn_out = sys.argv[2]
+f_out = open(fn_out,'w')
+for p in preds:
+    f_out.write('%lf\n' % p)

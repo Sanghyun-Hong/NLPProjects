@@ -7,9 +7,9 @@ from scipy import spatial
 from skip_thoughts import skipthoughts
 from skip_thoughts import eval_sick
 
-DATA_DIR = '../data/'
+DATA_DIR = 'data/'
 
-DATA_DIR = '../data/'
+DATA_DIR = 'data/'
 
 
 def read_embedding_file(model_file,existing_embeddings):
@@ -32,7 +32,7 @@ def read_embedding_file(model_file,existing_embeddings):
 def read_word_embeddings(vocab=None):
 
     if vocab is not None:
-        vocab_path = '../data/vocab.json'
+        vocab_path = 'data/skipthought_vocab.json'
         if os.path.exists(vocab_path):
             return json.loads(open(vocab_path).read())
 
@@ -47,7 +47,7 @@ def read_word_embeddings(vocab=None):
     print len(all_embeddings)
 
     if vocab is not None:
-        vocab_path = '../data/vocab.json'
+        vocab_path = 'data/skipthought_vocab.json'
 
         vocab_dict = {}
         for k in vocab:
@@ -63,7 +63,7 @@ def read_word_embeddings(vocab=None):
     return all_embeddings
 
 def read_word_embeddings_st(vocab=None):
-    vocab_path = '../data/vocab_st.json'
+    vocab_path = 'data/vocab_st.json'
     if vocab is not None:
         if os.path.exists(vocab_path):
             return json.loads(open(vocab_path).read())
@@ -88,11 +88,11 @@ def read_word_embeddings_st(vocab=None):
 
 
 
-vocab = []#eval_sick.get_vocabulary()
+vocab = []    #eval_sick.get_vocabulary()
 
 print 'a'
-model_sk = []#skipthoughts.load_model()
-model_bl = []#read_word_embeddings(vocab)
+model_sk = [] #skipthoughts.load_model()
+model_bl = [] #read_word_embeddings(vocab)
 print 'b'
 
 model = {}
@@ -101,7 +101,7 @@ model['baseline'] = model_bl
 
 test_dataset = sys.argv[1]
 print 'test:',test_dataset
-preds = eval_sick.evaluate(model, evaltest=True,test_dataset=test_dataset)
+preds = eval_sick.evaluate(model, evaltest=True, test_dataset=test_dataset)
 fn_out = sys.argv[2]
 f_out = open(fn_out,'w')
 for p in preds:

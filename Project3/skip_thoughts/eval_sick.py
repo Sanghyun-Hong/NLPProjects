@@ -22,8 +22,8 @@ from scipy import spatial
 
 
 
-if not os.path.exists('../data/np'):
-    os.mkdir('../data/np')
+if not os.path.exists('data/np'):
+    os.mkdir('data/np')
 
 def tokenize_sentence(sent):
     tokens = nltk.word_tokenize(sent)
@@ -80,7 +80,7 @@ def get_sentence_embeddings(tokenized_sent,embeddings_dict):
 
 
 def self_encode(model,Xname,X,verbose=True,use_eos=False):
-    xname_path = '../data/np/%s.npy' % (Xname)
+    xname_path = 'data/np/%s.npy' % (Xname)
 
     model_skipthoughts = model.get('skipthoughts',None)
     model_baseline = model.get('baseline',None)

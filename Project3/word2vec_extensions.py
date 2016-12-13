@@ -14,7 +14,7 @@ from gensim.models import Word2Vec, Doc2Vec
 """
     Pre-defined variables
 """
-MODEL_LOC  = 'models'
+MODEL_LOC  = 'data/models'
 # word2vec
 MNAME_W2V  = 'word2vec'
 MODEL_W2V  = 'GoogleNews-vectors-negative300.bin'

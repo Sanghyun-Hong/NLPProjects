@@ -1,5 +1,6 @@
 # NLPProjects
-Do cooperative problem solving on NLP project tasks (those links are only accessible with UMD directory accounts)
+
+A repository includes the three projects from the *Computational Linguistics 1 (NLP)* class at the *University of Maryland, College Park.* This class was organized and taught by [Prof. Marine Carpuet](http://www.cs.umd.edu/~marine/).
 
  - Project1: [Implementing Word Sense Disambiguation Systems](Project1)
  - Project2: [Dependency Parsing](Project2)

@@ -1,6 +1,12 @@
 # NLPProjects
-Do cooperative problem solving on NLP project tasks (those links are only accessible with UMD directory accounts)
+=============
 
- - Project1: [Implementing Word Sense Disambiguation Systems](Project1/README.md)
- - Project2: [Dependency Parsing](https://myelms.umd.edu/courses/1199410/assignments/4303280)
- - Project3: [Semantic Textual Similarity](https://myelms.umd.edu/courses/1199410/assignments/4312784)
+A repository includes the three projects from the *Computational Linguistics 1 (NLP)* class at the *University of Maryland, College Park.* This class was organized and taught by [Prof. Marine Carpuet](http://www.cs.umd.edu/~marine/).
+
+ - Project1: [Implementing Word Sense Disambiguation Systems](Project1)
+ - Project2: [Dependency Parsing](Project2)
+ - Project3: [Semantic Textual Similarity](Project3)
+
+License
+-------
+This code is licensed under the MIT license. Please see the LICENSE file for more information.

@@ -1,5 +1,0 @@
-Team Member (submission name: sso_baseline)
-
-1. Sanghyun Hong (shhong@cs.umd.edu)
-2. Octavian Suciu (osuciu@cs.umd.edu)
-3. Snehesh Shrestha (snehesh@cs.umd.edu)

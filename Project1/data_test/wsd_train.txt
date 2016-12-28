@@ -1,5 +1,0 @@
-news	obama is president
-news	romney is not president
-sports	obama plays golf
-sports	nicholson plays golf
-sports	nicholson likes golf

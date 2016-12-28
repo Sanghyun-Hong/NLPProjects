@@ -16,10 +16,11 @@ The format of the submitted files should be one label per line. So for the provi
 Please do not change the provided interfaces and answer formats as your code will be tested automatically, and your answers will be processed (semi)-automatically. You will not get credit if we cannot grade your submission due to incorrect formatting and modifications to the expected interface. The submission should be made by only one member from each group. All members of each group will get the same grade.
 
  - In order to get the provided partial implementation to work, you need to add nltk and sklearn to your python installation. Just run:
- ```
-  pip install nltk
-  pip install sklearn
- ```
+
+```shell
+pip install nltk
+pip install sklearn
+```
  - For the questions that ask you to write your own implementation of Naive Bayes and the perceptron, you are expected to write your own implementation :) this means that you cannot directly use existing implementations of these classifiers (e.g. from nltk, or sklearn). However, you can use data structures, such as collection.Counter.
 
  

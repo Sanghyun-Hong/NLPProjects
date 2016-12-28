@@ -26,9 +26,9 @@ Please do not change the provided interfaces and answer formats as your code wil
  
 ### Project Files:
 
- - Dataset: wsd_line_dataset.zip
- - Code Skeleton: cl1_p1_wsd.py
- - Answers Template: answers_template.txt
+ - Dataset: [wsd_line_dataset.zip](https://myelms.umd.edu/courses/1199410/files/44825371/download?wrap=1)
+ - Code Skeleton: [cl1_p1_wsd.py](https://myelms.umd.edu/courses/1199410/files/44854709/download?wrap=1)
+ - Answers Template: [answers_template.txt](https://myelms.umd.edu/courses/1199410/files/44825379/download?wrap=1)
  
 
 #### Part 1: How difficult is the problem we are trying to solve? Establishing a baseline and an upper bound 

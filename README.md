@@ -9,4 +9,4 @@ A repository includes the three projects from the *Computational Linguistics 1 (
 
 License
 -------
-This code is licensed under the BSD 2-Clause license. Please see the LICENSE file for more information.
+This code is licensed under the MIT license. Please see the LICENSE file for more information.

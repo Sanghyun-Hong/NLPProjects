@@ -1,5 +1,4 @@
 # NLPProjects
-=============
 
 A repository includes the three projects from the *Computational Linguistics 1 (NLP)* class at the *University of Maryland, College Park.* This class was organized and taught by [Prof. Marine Carpuet](http://www.cs.umd.edu/~marine/).
 
